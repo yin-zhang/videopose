@@ -96,8 +96,8 @@ load [duc_se.pth](https://drive.google.com/file/d/1OPORTWB2cwd5YTVBX-NE8fsauZJWs
 
 
 ### videopose
-for videopose model:
-https://github.com/lxy5513/videopose/blob/master/common/arguments.py#L29
+for videopose model: https://github.com/lxy5513/videopose/blob/master/common/arguments.py#L29
+<br>
 load [pose model](https://dl.fbaipublicfiles.com/video-pose-3d/cpn-pt-243.bin) in checkpoint/cpn-pt-243.bin
 
 <br>
