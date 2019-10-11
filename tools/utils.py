@@ -154,7 +154,7 @@ def videoInfo(VideoName):
 def videopose_model_load():
     # load trained model
     from common.model import TemporalModel
-    chk_filename = main_path + '/checkpoint/cpn-pt-243.bin'
+    chk_filename = main_path + '/checkpoint/pretrained_h36m_detectron_coco.bin'
     checkpoint = torch.load(chk_filename, map_location=lambda storage, loc: storage)# 把loc映射到storage
     model_pos = TemporalModel(17, 2, 17,filter_widths=[3,3,3,3,3] , causal=False, dropout=False, channels=1024, dense=False)
     model_pos = model_pos.cuda()
@@ -180,13 +180,32 @@ def interface(model_pos, keypoints, W, H):
     return prediction
 
 def interp_keypoints(keypoints):
-    # Fix missing keypoints by linear interpolation
     # input (N, 17, 2) return (N, 17, 2)
+
+    # Fix missing keypoints by nearest neighbor interpolation
     N = keypoints.shape[0]
     kpts = np.copy(keypoints)
     mask = ~np.isnan(kpts[:,0,0])
     indices = np.arange(N)
-    for i in range(17):
-        for j in range(2):
-            kpts[:, i, j] = np.interp(indices, indices[mask], kpts[mask, i, j])
+    valid_idx = int(np.min(indices[mask]))
+    for i in range(N):
+        if mask[i]:
+            valid_idx = i
+        else:
+            kpts[i,:,:] = kpts[valid_idx,:,:]
+
+    # Scale kpts such that its (x,y) in range [0,1000]
+    xmin = np.min(kpts[:,:,0])
+    xmax = np.max(kpts[:,:,0])
+    ymin = np.min(kpts[:,:,1])
+    ymax = np.max(kpts[:,:,1])
+    side = max(ymax-ymin, xmax-xmin)
+    xctr = (xmin + xmax) / 2
+    yctr = (ymin + ymax) / 2
+    xmin = xctr - side / 2
+    ymin = yctr - side / 2
+    kpts[:,:,0] -= xmin
+    kpts[:,:,1] -= ymin
+    kpts *= 1000 / side
+
     return kpts
