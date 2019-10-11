@@ -148,7 +148,8 @@ def evaluate(test_generator, model_pos, action=None, return_predictions=False):
 def videoInfo(VideoName):
     cap = cv2.VideoCapture(VideoName)
     length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    return cap, length
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    return cap, length, fps
 
 def videopose_model_load():
     # load trained model

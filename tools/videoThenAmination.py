@@ -29,7 +29,7 @@ common = common()
 
 # 先得到所有视频的2D坐标，再统一生成3D坐标
 def VideoPoseJoints(VideoName):
-    cap, cap_length = videoInfo(VideoName)
+    cap, cap_length, cap_fps = videoInfo(VideoName)
     kpt2Ds = []
     for i in tqdm(range(cap_length)):
         _, frame = cap.read()

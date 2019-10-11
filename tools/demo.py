@@ -15,7 +15,7 @@ interface3D = VideoPoseInterface
 from tools.utils import draw_3Dimg, draw_2Dimg, videoInfo, resize_img
 
 def main(VideoName):
-    cap, cap_length = videoInfo(VideoName)
+    cap, cap_length, cap_fps = videoInfo(VideoName)
     kpt2Ds = []
     for i in tqdm(range(cap_length)):
         _, frame = cap.read()
