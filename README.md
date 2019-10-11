@@ -84,12 +84,15 @@ need download model
 
 ### hrnet
 load [pose model](https://drive.google.com/drive/folders/1nzM_OBV9LbAEA7HClC0chEyf_7ECDXYA) in joints_detectors/hrnet/models/pytorch/pose_coco/pose_hrnet_w48_384x288.pth
+<br>
 load [yolov3.weights](https://pjreddie.com/media/files/yolov3.weights) in joints_detectors/hrnet/lib/detector/yolo/yoyov3.weights
-
+<br>
 
 ### alphapose
 load [yolov3-spp.weights](https://drive.google.com/file/d/1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC/view) in joints_detectors/Alphapose/models/yolo/yolov3-spp.weights
+<br>
 load [duc_se.pth](https://drive.google.com/file/d/1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW/view) in joints_detectors/Alphapose/models/sppe/duc_se.pth
+<br>
 
 
 ### videopose
