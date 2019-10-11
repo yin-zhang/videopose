@@ -143,8 +143,6 @@ def main():
                         input_video_skip=args.viz_skip)
 
     ckpt, time4 = ckpt_time(time3)
-    openVideoCommand="xdg-open " + args.viz_output
-    os.system(openVideoCommand)
     print('total spend {:2f} second'.format(ckpt))
 if __name__ == '__main__':
     main()
