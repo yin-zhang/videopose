@@ -179,3 +179,14 @@ def interface(model_pos, keypoints, W, H):
     prediction[:, :, 2] -= np.min(prediction[:, :, 2])
     return prediction
 
+def interp_keypoints(keypoints):
+    # Fix missing keypoints by linear interpolation
+    # input (N, 17, 2) return (N, 17, 2)
+    N = keypoints.shape[0]
+    kpts = np.copy(keypoints)
+    mask = ~np.isnan(kpts[:,0,0])
+    indices = np.arange(N)
+    for i in range(17):
+        for j in range(2):
+            kpts[:, i, j] = np.interp(indices, indices[mask], kpts[mask, i, j])
+    return kpts

@@ -23,6 +23,8 @@ from common.model import *
 from common.loss import *
 from common.generators import ChunkedGenerator, UnchunkedGenerator
 import time
+from tools.utils import interp_keypoints
+
 metadata={'layout_name': 'coco','num_joints': 17,'keypoints_symmetry': [[1, 3, 5, 7, 9, 11, 13, 15],[2, 4, 6, 8, 10, 12, 14, 16]]}
 
 # record time
@@ -78,10 +80,12 @@ def main():
         from joints_detectors.hrnet.pose_estimation.video import generate_kpts
         video_name = args.viz_video
         print('generat keypoints by hrnet...')
-        keypoints, fps = generate_kpts(video_name)
+        keypoints, fps = generate_kpts(video_name, no_nan=False)
     else:
         npz = np.load(args.input_npz)
         keypoints = npz['kpts'] #(N, 17, 2)
+
+    keypoints = interp_keypoints(keypoints)
 
     keypoints_symmetry = metadata['keypoints_symmetry']
     kps_left, kps_right = list(keypoints_symmetry[0]), list(keypoints_symmetry[1])

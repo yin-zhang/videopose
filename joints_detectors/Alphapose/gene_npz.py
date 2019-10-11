@@ -40,7 +40,7 @@ def model_load():
 def image_interface(model, image):
     return
 
-def handle_video(videofile):
+def handle_video(videofile, no_nan=True):
     args.video = videofile
     videofile = args.video
     mode = args.mode
@@ -82,20 +82,25 @@ def handle_video(videofile):
 
     im_names_desc =  tqdm(range(data_loader.length()))
     batchSize = args.posebatch
+    frames_w_pose = []
+    frame_cnt = 0
     for i in im_names_desc:
         start_time = getTime()
         with torch.no_grad():
             (inps, orig_img, im_name, boxes, scores, pt1, pt2) = det_processor.read()
             if orig_img is None:
                 break
+
+            frame_cnt += 1
             if boxes is None or boxes.nelement() == 0:
                 writer.save(None, None, None, None, None, orig_img, im_name.split('/')[-1])
                 continue
 
+            frames_w_pose.append(frame_cnt - 1)
             ckpt_time, det_time = getTime(start_time)
             runtime_profile['dt'].append(det_time)
-            # Pose Estimation
 
+            # Pose Estimation
             datalen = inps.size(0)
             leftover = 0
             if (datalen) % batchSize:
@@ -132,10 +137,18 @@ def handle_video(videofile):
     final_result = writer.results()
 
     kpts = []
+    if not no_nan:
+        for i in range(frame_cnt):
+            # initialize to NaN so we can interpolate later
+            kpts.append(np.full((17, 2), np.nan, dtype=np.float32))
+        
     for i in range(len(final_result)):
         try:
             kpt = final_result[i]['result'][0]['keypoints']
-            kpts.append(kpt.data.numpy())
+            if not no_nan:
+                kpts[frames_w_pose[i]] = kpt.data.numpy()
+            else:
+                kpts.append(kpt.data.numpy())
         except:
             print('error...')
 

@@ -104,7 +104,7 @@ def ckpt_time(t0=None, display=None):
 args = get_args()
 update_config(cfg, args)
 
-def generate_kpts(video_name, smooth=None):
+def generate_kpts(video_name, smooth=None, no_nan=True):
     human_model = yolo_model()
     args = get_args()
     update_config(cfg, args)
@@ -115,7 +115,6 @@ def generate_kpts(video_name, smooth=None):
     # Video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     input_fps = cam.get(cv2.CAP_PROP_FPS)
-    input_frameSize = (int(cam.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     #### load pose-hrnet MODEL
     pose_model = model_load(cfg)
@@ -132,6 +131,9 @@ def generate_kpts(video_name, smooth=None):
             # bbox is coordinate location
             inputs, origin_img, center, scale = PreProcess(input_image, bboxs, scores, cfg)
         except Exception as e:
+            if not no_nan:
+                # append NaN so we can interpolate later
+                kpts_result.append(np.full((17, 2), np.nan, dtype=np.float32))
             print(e)
             continue
 
@@ -151,7 +153,7 @@ def generate_kpts(video_name, smooth=None):
         kpts_result.append(preds[0])
 
     result = np.array(kpts_result)
-    return result, input_fps, input_frameSize
+    return result, input_fps
 
 def getTwoModel():
     #  args = get_args()
