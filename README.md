@@ -35,7 +35,7 @@ https://github.com/lxy5513/videopose/blob/master/outputs/README.md
 
 <br>
 
-## handle video by hrnet
+## handle live video by hrnet
 `updata at 2019-04-17`
 ```
 cd joints_detectors/hrnet/lib/
@@ -44,6 +44,10 @@ cd -
 python tools/hrnet_realtime.py -video /path/to/video.mp4
 ```
 
+## handle video by hrnet
+`python tools/hrnet_video.py --viz-output output.mp4 --viz-video /path/to/video.mp4`
+
+
 add hrnet 2D keypoints detection module, to realize the end to end 3D reconstruction
 添加hrnet 2D关键点检测模块,实现更高精读的3D video 重构   [`hrnet`](https://github.com/lxy5513/hrnet)
 
@@ -51,7 +55,11 @@ add hrnet 2D keypoints detection module, to realize the end to end 3D reconstruc
 
 ## handle video by alphapose
 `python tools/alphapose_video.py --viz-output output.mp4 --viz-video /path/to/video.mp4`
+
+<br>
 or
+<br>
+
 `python tools/aphapose_video.py --viz-output output.gif --viz-video /path/to/video.mp4 --viz-limit 180`
 need download model
 
