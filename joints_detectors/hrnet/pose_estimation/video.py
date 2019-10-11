@@ -63,7 +63,7 @@ def smooth_filter(kpts):
 
 class get_args():
     # hrnet config
-    cfg = path2 + '/experiments/coco/hrnet/w32_256x192_adam_lr1e-3.yaml'
+    cfg = path2 + '/experiments/coco/hrnet/w48_384x288_adam_lr1e-3.yaml'
     dataDir=''
     logDir=''
     modelDir=''
@@ -76,7 +76,7 @@ def model_load(config):
     model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
         config, is_train=False
     )
-    model_file_name  = path2 + '/models/pytorch/pose_coco/pose_hrnet_w32_256x192.pth'
+    model_file_name  = path2 + '/models/pytorch/pose_coco/pose_hrnet_w48_384x288.pth'
     state_dict = torch.load(model_file_name)
     from collections import OrderedDict
     new_state_dict = OrderedDict()
