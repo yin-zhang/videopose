@@ -80,15 +80,22 @@ need download model
 <br>
 
 
-## 相关模型下载reletive model download
+## 相关模型下载related model download
 
-其中hrnet依赖的pose model address: https://drive.google.com/drive/folders/1nzM_OBV9LbAEA7HClC0chEyf_7ECDXYA)
-yolov3 model download: `wget https://pjreddie.com/media/files/yolov3.weights`
-
-
-videopose model address: https://dl.fbaipublicfiles.com/video-pose-3d/cpn-pt-243.bin
+### hrnet
+load [pose model](https://drive.google.com/drive/folders/1nzM_OBV9LbAEA7HClC0chEyf_7ECDXYA) in joints_detectors/hrnet/models/pytorch/pose_coco/pose_hrnet_w48_384x288.pth
+load [yolov3.weights](https://pjreddie.com/media/files/yolov3.weights) in joints_detectors/hrnet/lib/detector/yolo/yoyov3.weights
 
 
+### alphapose
+load [yolov3-spp.weights](https://drive.google.com/file/d/1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC/view) in joints_detectors/Alphapose/models/yolo/yolov3-spp.weights
+load [duc_se.pth](https://drive.google.com/file/d/1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW/view) in joints_detectors/Alphapose/models/sppe/duc_se.pth
+
+
+### videopose
+for videopose model:
+https://github.com/lxy5513/videopose/blob/master/common/arguments.py#L29
+load [pose model](https://dl.fbaipublicfiles.com/video-pose-3d/cpn-pt-243.bin) in checkpoint/cpn-pt-243.bin
 
 <br>
 <br>
@@ -96,24 +103,4 @@ videopose model address: https://dl.fbaipublicfiles.com/video-pose-3d/cpn-pt-243
 ## paper traslation 论文翻译
 https://github.com/lxy5513/videopose/blob/master/doc/translate.md
 
-
-<br>
-<br>
-
-## commen problems
-1. model download and save location
-### hrnet
-load [pose model]( https://dl.fbaipublicfiles.com/video-pose-3d/cpn-pt-243.bin) in  joints_detectors/hrnet/models/pytorch/pose_coco/
-load yolov3 in joints_detectors/hrnet/lib/detector/yolo/
-
-
-### alphapose
-load [yolov3](https://drive.google.com/file/d/1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC/view) in joints_detectors/Alphapose/models/yolo/
-load [duc_se](https://drive.google.com/file/d/1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW/view)  joints_detectors/Alphapose/models/sppe/
-
-
-### videopose
-> for videopose model:
-https://github.com/lxy5513/videopose/blob/master/common/arguments.py#L29
-checkpoint/
 
