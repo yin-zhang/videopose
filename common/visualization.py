@@ -95,7 +95,7 @@ def render_animation(keypoints, poses, skeleton, fps, bitrate, azim, output, vie
         ax.set_xlim3d([-radius/2, radius/2])
         ax.set_zlim3d([0, radius])
         ax.set_ylim3d([-radius/2, radius/2])
-        ax.set_aspect('equal')
+        #ax.set_aspect('equal')
         # 坐标轴刻度
         ax.set_xticklabels([])
         ax.set_yticklabels([])

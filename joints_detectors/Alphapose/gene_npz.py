@@ -38,7 +38,7 @@ def model_load():
     return model
 
 def image_interface(model, image):
-
+    return
 
 def handle_video(videofile):
     args.video = videofile
