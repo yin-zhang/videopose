@@ -70,13 +70,15 @@ def evaluate(test_generator, model_pos, action=None, return_predictions=False):
 def main():
     args = parse_args()
 
+    fps = 25
+    
     # 2D kpts loads or generate
     if not args.input_npz:
         # 通过hrnet生成关键点
         from joints_detectors.hrnet.pose_estimation.video import generate_kpts
         video_name = args.viz_video
         print('generat keypoints by hrnet...')
-        keypoints = generate_kpts(video_name)
+        keypoints, fps = generate_kpts(video_name)
     else:
         npz = np.load(args.input_npz)
         keypoints = npz['kpts'] #(N, 17, 2)
@@ -137,7 +139,7 @@ def main():
 
     from common.visualization import render_animation
     render_animation(input_keypoints, anim_output,
-                        skeleton(), 25, args.viz_bitrate, np.array(70., dtype=np.float32), args.viz_output,
+                        skeleton(), fps, args.viz_bitrate, np.array(70., dtype=np.float32), args.viz_output,
                         limit=args.viz_limit, downsample=args.viz_downsample, size=args.viz_size,
                         input_video_path=args.viz_video, viewport=(1000, 1002),
                         input_video_skip=args.viz_skip)

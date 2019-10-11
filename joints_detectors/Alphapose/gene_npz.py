@@ -144,7 +144,7 @@ def handle_video(videofile):
     kpts = np.array(kpts).astype(np.float32)
     print('kpts npz save in ', name)
     np.savez_compressed(name, kpts=kpts)
-    return kpts
+    return kpts, fps
 
 if __name__ == "__main__":
     handle_video()
