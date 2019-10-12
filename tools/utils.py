@@ -184,7 +184,7 @@ def interp_keypoints(keypoints):
 
     # Fix missing keypoints by nearest neighbor interpolation
     N = keypoints.shape[0]
-    kpts = np.copy(keypoints)
+    kpts = keypoints.copy()
     mask = ~np.isnan(kpts[:,0,0])
     indices = np.arange(N)
     valid_idx = int(np.min(indices[mask]))
@@ -193,6 +193,11 @@ def interp_keypoints(keypoints):
             valid_idx = i
         else:
             kpts[i,:,:] = kpts[valid_idx,:,:]
+    return kpts
+
+def scale_keypoints(keypoints):
+
+    kpts = keypoints.copy()
 
     # Scale kpts such that its (x,y) in range [0,1000]
     xmin = np.min(kpts[:,:,0])
@@ -206,6 +211,7 @@ def interp_keypoints(keypoints):
     ymin = yctr - side / 2
     kpts[:,:,0] -= xmin
     kpts[:,:,1] -= ymin
-    kpts *= 1000 / side
+    scale = side / 1000
+    kpts /= scale
 
     return kpts

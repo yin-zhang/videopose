@@ -23,7 +23,7 @@ from common.model import *
 from common.loss import *
 from common.generators import ChunkedGenerator, UnchunkedGenerator
 import time
-from tools.utils import interp_keypoints
+from tools.utils import interp_keypoints, scale_keypoints
 
 metadata={'layout_name': 'coco','num_joints': 17,'keypoints_symmetry': [[1, 3, 5, 7, 9, 11, 13, 15],[2, 4, 6, 8, 10, 12, 14, 16]]}
 
@@ -85,7 +85,8 @@ def main():
         npz = np.load(args.input_npz)
         keypoints = npz['kpts'] #(N, 17, 2)
 
-    keypoints = interp_keypoints(keypoints)
+    raw_keypoints = interp_keypoints(keypoints)
+    keypoints = scale_keypoints(raw_keypoints)
 
     keypoints_symmetry = metadata['keypoints_symmetry']
     kps_left, kps_right = list(keypoints_symmetry[0]), list(keypoints_symmetry[1])
@@ -142,7 +143,7 @@ def main():
         args.viz_output = 'outputs/hrnet_result.mp4'
 
     from common.visualization import render_animation
-    render_animation(input_keypoints, anim_output,
+    render_animation(raw_keypoints, anim_output,
                         skeleton(), fps, args.viz_bitrate, np.array(70., dtype=np.float32), args.viz_output,
                         limit=args.viz_limit, downsample=args.viz_downsample, size=args.viz_size,
                         input_video_path=args.viz_video, viewport=(1000, 1002),
