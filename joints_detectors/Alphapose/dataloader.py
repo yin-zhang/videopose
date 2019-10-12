@@ -672,7 +672,7 @@ class DataWriter:
                         if opt.save_video:
                             self.stream.write(img)
                         if opt.save_hms:
-                            save_mergedHeatmaps(hm_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms.jpg')))
+                            save_mergedHeatmaps(hm_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms.jpg')), img_res=img)
                 else:
                     # location prediction (n, kp, 2) | score prediction (n, kp, 1)
 
@@ -695,7 +695,7 @@ class DataWriter:
                         if opt.save_video:
                             self.stream.write(img)
                         if opt.save_hms:
-                            save_mergedHeatmaps(hm_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms.jpg')))
+                            save_mergedHeatmaps(hm_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms.jpg')), img_res=img)
 
             else:
                 time.sleep(0.1)
