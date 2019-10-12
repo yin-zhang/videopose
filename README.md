@@ -1,4 +1,4 @@
-<p align="center"><img src="outputs/ap_kunkun.gif" width="70%" alt="" /></p>
+<p align="center"><img src="outputs/ap_kunkun.gif" width="95%" alt="" /></p>
 
 
 ## Usage
