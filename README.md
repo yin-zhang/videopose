@@ -1,10 +1,6 @@
-## Alphapose Sample Result 
+## Sample Output Video
 
 <p align="center"><img src="outputs/ap_kunkun.gif" width="90%" alt="" /></p>
-
-## HR-Net Sample Result 
-
-<p align="center"><img src="outputs/hn_kunkun.gif" width="90%" alt="" /></p>
 
 ## Usage
 
