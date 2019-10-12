@@ -21,6 +21,9 @@ import torch.multiprocessing as mp
 from multiprocessing import Process
 from multiprocessing import Queue as pQueue
 from threading import Thread
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 main_path = os.path.dirname(os.path.realpath(__file__))
 # import the Queue class from Python 3
 if sys.version_info >= (3, 0):
@@ -634,7 +637,7 @@ class DataWriter:
         # initialize the queue used to store frames read from
         # the video file
         self.Q = Queue(maxsize=queueSize)
-        if opt.save_img:
+        if opt.save_img or opt.save_hms:
             if not os.path.exists(opt.outputpath + '/vis'):
                 os.mkdir(opt.outputpath + '/vis')
 
@@ -668,6 +671,8 @@ class DataWriter:
                             cv2.imwrite(os.path.join(opt.outputpath, 'vis', im_name), img)
                         if opt.save_video:
                             self.stream.write(img)
+                        if opt.save_hms:
+                            save_mergedHeatmaps(hm_data, os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms.jpg'))
                 else:
                     # location prediction (n, kp, 2) | score prediction (n, kp, 1)
 
@@ -680,7 +685,7 @@ class DataWriter:
                         'result': result
                     }
                     self.final_result.append(result)
-                    if opt.save_img or opt.save_video or opt.vis:
+                    if opt.save_img or opt.save_video or opt.vis or opt.save_hms:
                         img = vis_frame(orig_img, result)
                         if opt.vis:
                             cv2.imshow("AlphaPose Demo", img)
@@ -689,6 +694,9 @@ class DataWriter:
                             cv2.imwrite(os.path.join(opt.outputpath, 'vis', im_name), img)
                         if opt.save_video:
                             self.stream.write(img)
+                        if opt.save_hms:
+                            save_mergedHeatmaps(hm_data, os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms.jpg'))
+
             else:
                 time.sleep(0.1)
 
@@ -787,3 +795,23 @@ def crop_from_dets(img, boxes, inps, pt1, pt2):
         pt2[i] = bottomRight
 
     return inps, pt1, pt2
+
+def save_mergedHeatmaps(hms, path, c=5):
+    assert len(hms.shape) == 3, 'Dimension of heatmaps should be 3, keypoints x h x w'
+    r = hms.shape[0] // c + (0 if hms.shape[0] % c == 0 else 1)
+    
+    plt.figure()
+    for i in range(hms.shape[0]):
+        ax = plt.subplot(r, c, i + 1)
+        plt.subplots_adjust(hspace=0.4)
+        ax.set_title('kps_{:d}'.format(i), fontsize= 10)
+        sns.heatmap(hms[i], cbar=False, cmap='viridis',xticklabels=False,yticklabels=False, ax=ax)
+        
+    plt.savefig(path)
+    plt.close()
+
+
+        
+
+
+

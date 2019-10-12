@@ -139,6 +139,8 @@ parser.add_argument('--detbatch', type=int, default=1,
                     help='detection batch size')
 parser.add_argument('--posebatch', type=int, default=80,
                     help='pose estimation maximum batch size')
+parser.add_argument('--save_hms', default=False, action='store_true',
+                    help='save heatmaps as images')                    
 
 "----------------------------- Video options -----------------------------"
 parser.add_argument('--video', dest='video',
