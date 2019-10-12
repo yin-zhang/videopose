@@ -152,8 +152,8 @@ parser.add_argument('--vis_fast', dest='vis_fast',
                     help='use fast rendering', action='store_true', default=False)
 
 
-#  opt = parser.parse_args()
+opt = parser.parse_args()
 # 用在jupyter上
-opt = parser.parse_args(args=[])
+# opt = parser.parse_args(args=[])
 
 opt.num_classes = 80

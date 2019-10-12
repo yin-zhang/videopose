@@ -123,21 +123,4 @@ if __name__ == "__main__":
         pass
     writer.stop()
     final_result = writer.results()
-
-    kpts = []
-    for i in range(len(final_result)):
-        kpt = final_result[i]['result'][0]['keypoints']
-        kpts.append(kpt.data.numpy())
-
-    import ipdb;ipdb.set_trace()
-    filename = os.path.basename(args.video).split('.')[0] 
-    name = '/home/xyliu/experiments/VideoPose3D/data/'+filename
-    kpts = np.array(kpts).astype(np.float32)
-    np.savez_compressed(name, kpts=kpts)
-
-
-
-
-
-
     write_json(final_result, args.outputpath)
