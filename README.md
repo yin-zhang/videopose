@@ -90,26 +90,26 @@ need download model
 
 ## 相关模型下载related model download
 
-### hrnet
-load [pose model](https://drive.google.com/drive/folders/1nzM_OBV9LbAEA7HClC0chEyf_7ECDXYA) in joints_detectors/hrnet/models/pytorch/pose_coco/pose_hrnet_w48_384x288.pth
-<br>
-load [yolov3.weights](https://pjreddie.com/media/files/yolov3.weights) in joints_detectors/hrnet/lib/detector/yolo/yoyov3.weights
-<br>
+### Alphapose
 
-### alphapose
-load [yolov3-spp.weights](https://drive.google.com/file/d/1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC/view) in joints_detectors/Alphapose/models/yolo/yolov3-spp.weights
-<br>
-load [duc_se.pth](https://drive.google.com/file/d/1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW/view) in joints_detectors/Alphapose/models/sppe/duc_se.pth
-<br>
+- Download **yolov3-spp.weights** from ([Google Drive](https://drive.google.com/open?id=1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC) | [Baidu pan](https://pan.baidu.com/s/1Zb2REEIk8tcahDa8KacPNA)),
+  place to `./joints_detectors/Alphapose/models/yolo`
 
+- Download **duc_se.pth** from ([Google Drive](https://drive.google.com/open?id=1OPORTWB2cwd5YTVBX-NE8fsauZJWsrtW) | [Baidu pan](https://pan.baidu.com/s/15jbRNKuslzm5wRSgUVytrA)),
+  place to `./joints_detectors/Alphapose/models/sppe`
 
-### videopose
-for videopose model: https://github.com/lxy5513/videopose/blob/master/common/arguments.py#L29
-<br>
-load [pose model](https://dl.fbaipublicfiles.com/video-pose-3d/pretrained_h36m_detectron_coco.bin) in checkpoint/pretrained_h36m_detectron_coco.bin
+### HR-Net
 
-<br>
-<br>
+- Download **pose_hrnet*** from [Google Drive](https://drive.google.com/drive/folders/1nzM_OBV9LbAEA7HClC0chEyf_7ECDXYA), 
+  place to `./joints_detectors/hrnet/models/pytorch/pose_coco/`
+
+- Download **yolov3.weights** from [here](https://pjreddie.com/media/files/yolov3.weights),
+  place to `./joints_detectors/hrnet/lib/detector/yolo`
+
+### 3D Joint Detector
+
+- Download **pretrained_h36m_detectron_coco.bin** from [here](https://dl.fbaipublicfiles.com/video-pose-3d/pretrained_h36m_detectron_coco.bin),
+  place it into `./checkpoint` folder
 
 ## paper traslation 论文翻译
 https://github.com/lxy5513/videopose/blob/master/doc/translate.md
