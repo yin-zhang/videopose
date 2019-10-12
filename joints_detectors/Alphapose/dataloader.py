@@ -662,8 +662,8 @@ class DataWriter:
                 (boxes, scores, hm_data, pt1, pt2, orig_img, im_name) = self.Q.get()
                 orig_img = np.array(orig_img, dtype=np.uint8)
                 if boxes is None:
-                    if pts.save_hms_data:
-                        save_heatmaps(hms_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
+                    if opt.save_hms_data:
+                        save_heatmaps(hm_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                     if opt.save_img or opt.save_video or opt.vis:
                         img = orig_img
                         if opt.vis:
@@ -687,8 +687,8 @@ class DataWriter:
                         'result': result
                     }
                     self.final_result.append(result)
-                    if pts.save_hms_data:
-                        save_heatmaps(hms_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
+                    if opt.save_hms_data:
+                        save_heatmaps(hm_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                     if opt.save_img or opt.save_video or opt.vis or opt.save_hms or pts.save_hms_data:
                         img = vis_frame(orig_img, result)
                         if opt.vis:
