@@ -13,7 +13,14 @@ import sys
 main_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(main_path)
 
-from opt0 import opt
+# reset sys.argv
+old_sys_argv = sys.argv
+sys.argv = [sys.argv[0]]
+
+from opt import opt
+
+# restore sys.argv
+sys.argv = old_sys_argv
 
 from dataloader import VideoLoader, DetectionLoader, DetectionProcessor, DataWriter, Mscoco
 from yolo.util import write_results, dynamic_write_results
@@ -165,3 +172,4 @@ def handle_video(videofile, no_nan=True):
 
 if __name__ == "__main__":
     handle_video()
+
