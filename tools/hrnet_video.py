@@ -24,6 +24,7 @@ from common.loss import *
 from common.generators import ChunkedGenerator, UnchunkedGenerator
 import time
 from tools.utils import interp_keypoints, scale_keypoints
+from tools.save_utils import save_prediction
 
 metadata={'layout_name': 'coco','num_joints': 17,'keypoints_symmetry': [[1, 3, 5, 7, 9, 11, 13, 15],[2, 4, 6, 8, 10, 12, 14, 16]]}
 
@@ -144,7 +145,7 @@ def main():
     if args.viz_export is not None:
         print('Exporting joint positions to', args.viz_export)
         # Predictions are in camera space
-        np.savez_compressed(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
+        save_prediction(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
         
     if args.viz_output is not None:
         from common.visualization import render_animation
