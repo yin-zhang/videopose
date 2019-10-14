@@ -87,7 +87,7 @@ def main():
         cam_h = npz['cam_h']
 
     input_keypoints = interp_keypoints(keypoints)
-    keypoints = scale_keypoints(raw_keypoints)
+    keypoints = scale_keypoints(input_keypoints, w=1000, h=1002)
 
     keypoints_symmetry = metadata['keypoints_symmetry']
     kps_left, kps_right = list(keypoints_symmetry[0]), list(keypoints_symmetry[1])
@@ -140,7 +140,7 @@ def main():
     if args.viz_export is not None:
         print('Exporting joint positions to', args.viz_export)
         # Predictions are in camera space
-        np.savez(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
+        np.savez_compressed(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
         
     if args.viz_output is not None:
         from common.visualization import render_animation

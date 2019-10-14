@@ -144,7 +144,7 @@ def main():
     if args.viz_export is not None:
         print('Exporting joint positions to', args.viz_export)
         # Predictions are in camera space
-        np.savez(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
+        np.savez_compressed(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
         
     if args.viz_output is not None:
         from common.visualization import render_animation
