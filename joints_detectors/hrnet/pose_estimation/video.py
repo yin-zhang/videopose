@@ -115,8 +115,8 @@ def generate_kpts(video_name, smooth=None, no_nan=True):
     # Video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     input_fps = cam.get(cv2.CAP_PROP_FPS)
-    cam_w = int(self.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
-    cam_h = int(self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    cam_w = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+    cam_h = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     #### load pose-hrnet MODEL
     pose_model = model_load(cfg)
