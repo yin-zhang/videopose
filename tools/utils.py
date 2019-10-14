@@ -211,6 +211,6 @@ def scale_keypoints(keypoints, w=1000, h=1002):
     ymin = yctr - side / 2
     kpts[:,:,0] -= xmin
     kpts[:,:,1] -= ymin
-    kps *= min(w, h) / side
+    kpts *= min(w, h) / side
 
     return kpts
