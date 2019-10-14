@@ -156,10 +156,10 @@ def handle_video(videofile, no_nan=True):
 
     kpts = np.array(kpts).astype(np.float32)
 
-    filename = os.path.basename(args.video).split('.')[0]
-    name = filename + '.npz'
-    print('kpts npz save in ', name)
-    np.savez_compressed(name, kpts=kpts, fps=fps, cam_w=cam_w, cam_h=cam_h)
+    #filename = os.path.basename(args.video).split('.')[0]
+    #name = filename + '.npz'
+    #print('kpts npz save in ', name)
+    #np.savez_compressed(name, kpts=kpts, fps=fps, cam_w=cam_w, cam_h=cam_h)
 
     return kpts, fps, cam_w, cam_h
 
