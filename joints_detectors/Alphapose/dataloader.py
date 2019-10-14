@@ -689,7 +689,7 @@ class DataWriter:
                     self.final_result.append(result)
                     if opt.save_hms_data:
                         save_heatmaps(hm_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
-                    if opt.save_img or opt.save_video or opt.vis or opt.save_hms or pts.save_hms_data:
+                    if opt.save_img or opt.save_video or opt.vis or opt.save_hms or opt.save_hms_data:
                         img = vis_frame(orig_img, result)
                         if opt.vis:
                             cv2.imshow("AlphaPose Demo", img)
