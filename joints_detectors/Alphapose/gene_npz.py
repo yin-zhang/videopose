@@ -13,7 +13,7 @@ import sys
 main_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(main_path)
 
-from opt import opt
+from opt0 import opt
 
 from dataloader import VideoLoader, DetectionLoader, DetectionProcessor, DataWriter, Mscoco
 from yolo.util import write_results, dynamic_write_results
