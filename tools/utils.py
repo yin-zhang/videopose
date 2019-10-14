@@ -195,7 +195,7 @@ def interp_keypoints(keypoints):
             kpts[i,:,:] = kpts[valid_idx,:,:]
     return kpts
 
-def scale_keypoints(keypoints):
+def scale_keypoints(keypoints, w=1000, h=1002):
 
     kpts = keypoints.copy()
 
@@ -211,7 +211,6 @@ def scale_keypoints(keypoints):
     ymin = yctr - side / 2
     kpts[:,:,0] -= xmin
     kpts[:,:,1] -= ymin
-    scale = side / 1000
-    kpts /= scale
+    kps *= min(w, h) / side
 
     return kpts

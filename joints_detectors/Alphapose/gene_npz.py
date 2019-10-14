@@ -51,6 +51,8 @@ def handle_video(videofile, no_nan=True):
     # Load input video
     data_loader = VideoLoader(videofile, batchSize=args.detbatch).start()
     (fourcc,fps,frameSize) = data_loader.videoinfo()
+    cam_w = frameSize[0]
+    cam_h = frameSize[1]
 
     print('the video is {} f/s'.format(fps))
 
@@ -152,12 +154,14 @@ def handle_video(videofile, no_nan=True):
         except:
             print('error...')
 
+    kpts = np.array(kpts).astype(np.float32)
+
     filename = os.path.basename(args.video).split('.')[0]
     name = filename + '.npz'
-    kpts = np.array(kpts).astype(np.float32)
     print('kpts npz save in ', name)
-    np.savez_compressed(name, kpts=kpts)
-    return kpts, fps
+    np.savez_compressed(name, kpts=kpts, fps=fps, cam_w=cam_w, cam_h=cam_h)
+
+    return kpts, fps, cam_w, cam_h
 
 if __name__ == "__main__":
     handle_video()

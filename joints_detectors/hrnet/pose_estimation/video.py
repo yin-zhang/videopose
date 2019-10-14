@@ -115,6 +115,8 @@ def generate_kpts(video_name, smooth=None, no_nan=True):
     # Video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     input_fps = cam.get(cv2.CAP_PROP_FPS)
+    cam_w = int(self.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
+    cam_h = int(self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     #### load pose-hrnet MODEL
     pose_model = model_load(cfg)
@@ -153,7 +155,7 @@ def generate_kpts(video_name, smooth=None, no_nan=True):
         kpts_result.append(preds[0])
 
     result = np.array(kpts_result)
-    return result, input_fps
+    return result, input_fps, cam_w, cam_h
 
 def getTwoModel():
     #  args = get_args()
