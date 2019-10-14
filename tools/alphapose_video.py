@@ -142,15 +142,13 @@ def main():
         # Predictions are in camera space
         np.savez(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
         
-    if not args.viz_output:
-        args.viz_output = 'outputs/alpha_result.mp4'
-
-    from common.visualization import render_animation
-    render_animation(input_keypoints, anim_output,
-                        skeleton(), fps, args.viz_bitrate, np.array(70., dtype=np.float32), args.viz_output,
-                        limit=args.viz_limit, downsample=args.viz_downsample, size=args.viz_size,
-                        input_video_path=args.viz_video, viewport=(1000, 1002),
-                        input_video_skip=args.viz_skip)
+    if args.viz_output is not None:
+        from common.visualization import render_animation
+        render_animation(input_keypoints, anim_output,
+                         skeleton(), fps, args.viz_bitrate, np.array(70., dtype=np.float32), args.viz_output,
+                         limit=args.viz_limit, downsample=args.viz_downsample, size=args.viz_size,
+                         input_video_path=args.viz_video, viewport=(1000, 1002),
+                         input_video_skip=args.viz_skip)
 
     print('total spend {:2f} second'.format(ckpt))
 if __name__ == '__main__':
