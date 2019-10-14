@@ -132,6 +132,11 @@ def main():
                                 kps_left=kps_left, kps_right=kps_right, joints_left=joints_left, joints_right=joints_right)
     prediction = evaluate(gen,model_pos, return_predictions=True)
 
+    if args.viz_export is not None:
+        print('Exporting joint positions to', args.viz_export)
+        # Predictions are in camera space
+        save_prediction(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
+        
     rot = np.array([ 0.14070565, -0.15007018, -0.7552408 ,  0.62232804], dtype=np.float32)
     prediction = camera_to_world(prediction, R=rot, t=0)
 
@@ -142,11 +147,6 @@ def main():
     ckpt, time3 = ckpt_time(time2)
     print('------- generate reconstruction 3D data spends {:.2f} seconds'.format(ckpt))
 
-    if args.viz_export is not None:
-        print('Exporting joint positions to', args.viz_export)
-        # Predictions are in camera space
-        save_prediction(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
-        
     if args.viz_output is not None:
         from common.visualization import render_animation
         render_animation(input_keypoints, anim_output,
