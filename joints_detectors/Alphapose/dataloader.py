@@ -662,8 +662,11 @@ class DataWriter:
                 (boxes, scores, hm_data, pt1, pt2, orig_img, im_name) = self.Q.get()
                 orig_img = np.array(orig_img, dtype=np.uint8)
                 if boxes is None:
-                    if pts.save_hms_data:
-                        save_heatmaps(hms_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
+                    if opt.save_hms_data:
+                        save_heatmaps(
+                            hms_data[0], pt1[0], pt2[0], 
+                            opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
+                            os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                     if opt.save_img or opt.save_video or opt.vis:
                         img = orig_img
                         if opt.vis:
@@ -677,7 +680,6 @@ class DataWriter:
                             save_mergedHeatmaps(hm_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms.jpg')), img_res=img)
                 else:
                     # location prediction (n, kp, 2) | score prediction (n, kp, 1)
-
                     preds_hm, preds_img, preds_scores = getPrediction(
                         hm_data, pt1, pt2, opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW)
 
@@ -687,8 +689,11 @@ class DataWriter:
                         'result': result
                     }
                     self.final_result.append(result)
-                    if pts.save_hms_data:
-                        save_heatmaps(hms_data[0], os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
+                    if opt.save_hms_data:
+                        save_heatmaps(
+                            hms_data[0], pt1[0], pt2[0], 
+                            opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
+                            os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                     if opt.save_img or opt.save_video or opt.vis or opt.save_hms or pts.save_hms_data:
                         img = vis_frame(orig_img, result)
                         if opt.vis:
@@ -821,9 +826,8 @@ def save_mergedHeatmaps(hms, path, c=5, img_res=None):
     plt.savefig(path)
     plt.close()
 
-def save_heatmaps(hms, path):
-    np.savez_compressed(path, heatmaps=hms.numpy())
-
+def save_heatmaps(hms, pt1, pt2, inputResH, inputResW, outputResH, outputResW, path):
+    np.savez_compressed(path, hms=hms.numpy(), pt1=pt1, pt2=pt2, inputResH=inputResH, inputResW=inputResW, outputResH=outputResH, outputResW=outputResW)
 
         
 
