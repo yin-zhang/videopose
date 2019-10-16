@@ -694,7 +694,7 @@ class DataWriter:
                             hms_data[0], pt1[0], pt2[0], 
                             opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
                             os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
-                    if opt.save_img or opt.save_video or opt.vis or opt.save_hms or pts.save_hms_data:
+                    if opt.save_img or opt.save_video or opt.vis or opt.save_hms:
                         img = vis_frame(orig_img, result)
                         if opt.vis:
                             cv2.imshow("AlphaPose Demo", img)

@@ -13,7 +13,14 @@ import sys
 main_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(main_path)
 
+# reset sys.argv
+old_sys_argv = sys.argv
+sys.argv = [sys.argv[0]]
+
 from opt import opt
+
+# restore sys.argv
+sys.argv = old_sys_argv
 
 from dataloader import VideoLoader, DetectionLoader, DetectionProcessor, DataWriter, Mscoco
 from yolo.util import write_results, dynamic_write_results
@@ -51,6 +58,8 @@ def handle_video(videofile, no_nan=True):
     # Load input video
     data_loader = VideoLoader(videofile, batchSize=args.detbatch).start()
     (fourcc,fps,frameSize) = data_loader.videoinfo()
+    cam_w = frameSize[0]
+    cam_h = frameSize[1]
 
     print('the video is {} f/s'.format(fps))
 
@@ -152,12 +161,15 @@ def handle_video(videofile, no_nan=True):
         except:
             print('error...')
 
-    filename = os.path.basename(args.video).split('.')[0]
-    name = filename + '.npz'
     kpts = np.array(kpts).astype(np.float32)
-    print('kpts npz save in ', name)
-    np.savez_compressed(name, kpts=kpts)
-    return kpts, fps
+
+    #filename = os.path.basename(args.video).split('.')[0]
+    #name = filename + '.npz'
+    #print('kpts npz save in ', name)
+    #np.savez_compressed(name, kpts=kpts, fps=fps, cam_w=cam_w, cam_h=cam_h)
+
+    return kpts, fps, cam_w, cam_h
 
 if __name__ == "__main__":
     handle_video()
+

@@ -21,6 +21,7 @@ from common.loss import *
 from common.generators import ChunkedGenerator, UnchunkedGenerator
 import time
 from tools.utils import interp_keypoints, scale_keypoints
+from tools.save_utils import save_prediction
 
 metadata={'layout_name': 'coco','num_joints': 17,'keypoints_symmetry': [[1, 3, 5, 7, 9, 11, 13, 15],[2, 4, 6, 8, 10, 12, 14, 16]]}
 
@@ -70,19 +71,24 @@ def main():
     args = parse_args()
 
     fps = 25
+    cam_w = 1000
+    cam_h = 1002
     
     # 2D kpts loads or generate
     if not args.input_npz:
         # crate kpts by alphapose
         from joints_detectors.Alphapose.gene_npz import handle_video
         video_name = args.viz_video
-        keypoints, fps = handle_video(video_name, no_nan=False)
+        keypoints, fps, cam_w, cam_h = handle_video(video_name, no_nan=False)
     else:
         npz = np.load(args.input_npz)
         keypoints = npz['kpts'] #(N, 17, 2)
+        fps = npz['fps']
+        cam_w = npz['cam_w']
+        cam_h = npz['cam_h']
 
-    raw_keypoints = interp_keypoints(keypoints)
-    keypoints = scale_keypoints(raw_keypoints)
+    input_keypoints = interp_keypoints(keypoints)
+    keypoints = scale_keypoints(input_keypoints, w=1000, h=1002)
 
     keypoints_symmetry = metadata['keypoints_symmetry']
     kps_left, kps_right = list(keypoints_symmetry[0]), list(keypoints_symmetry[1])
@@ -117,12 +123,16 @@ def main():
     causal_shift = 0
 
     print('Rendering...')
-    input_keypoints = keypoints.copy()
-    gen = UnchunkedGenerator(None, None, [input_keypoints],
+    gen = UnchunkedGenerator(None, None, [keypoints],
                                 pad=pad, causal_shift=causal_shift, augment=args.test_time_augmentation,
                                 kps_left=kps_left, kps_right=kps_right, joints_left=joints_left, joints_right=joints_right)
     prediction = evaluate(gen,model_pos, return_predictions=True)
 
+    if args.viz_export is not None:
+        print('Exporting joint positions to', args.viz_export)
+        # Predictions are in camera space
+        save_prediction(args.viz_export, prediction=prediction, input_keypoints=input_keypoints, cam_w=cam_w, cam_h=cam_h)
+        
     rot = np.array([ 0.14070565, -0.15007018, -0.7552408 ,  0.62232804], dtype=np.float32)
     prediction = camera_to_world(prediction, R=rot, t=0)
 
@@ -133,16 +143,13 @@ def main():
     ckpt, time3 = ckpt_time(time2)
     print('------- generate reconstruction 3D data spends {:.2f} seconds'.format(ckpt))
 
-
-    if not args.viz_output:
-        args.viz_output = 'outputs/alpha_result.mp4'
-
-    from common.visualization import render_animation
-    render_animation(raw_keypoints, anim_output,
-                        skeleton(), fps, args.viz_bitrate, np.array(70., dtype=np.float32), args.viz_output,
-                        limit=args.viz_limit, downsample=args.viz_downsample, size=args.viz_size,
-                        input_video_path=args.viz_video, viewport=(1000, 1002),
-                        input_video_skip=args.viz_skip)
+    if args.viz_output is not None:
+        from common.visualization import render_animation
+        render_animation(input_keypoints, anim_output,
+                         skeleton(), fps, args.viz_bitrate, np.array(70., dtype=np.float32), args.viz_output,
+                         limit=args.viz_limit, downsample=args.viz_downsample, size=args.viz_size,
+                         input_video_path=args.viz_video, viewport=(1000, 1002),
+                         input_video_skip=args.viz_skip)
 
     print('total spend {:2f} second'.format(ckpt))
 if __name__ == '__main__':
