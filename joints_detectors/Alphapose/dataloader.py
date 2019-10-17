@@ -809,7 +809,9 @@ def save_mergedHeatmaps(hms, path, c=5, img_res=None):
     assert len(hms.shape) == 3, 'Dimension of heatmaps should be 3, keypoints x h x w'
     n = hms.shape[0] + (0 if img_res is None else 1)
     r = n // c + (0 if n % c == 0 else 1)
-    
+
+    joint_names = ['Nose', 'LEye', 'REye', 'LEar', 'REar', 'LShoulder', 'RShoulder', 'LElbow', 'RElbow', 'LWrist', 'RWrist', 'LHip', 'RHip', 'LKnee', 'Rknee', 'LAnkle', 'RAnkle']
+
     plt.figure()
     plt.subplots_adjust(hspace=0.4)
     for i in range(hms.shape[0]):
