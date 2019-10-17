@@ -664,7 +664,7 @@ class DataWriter:
                 if boxes is None:
                     if opt.save_hms_data:
                         save_heatmaps(
-                            hms_data[0], pt1[0], pt2[0], 
+                            hm_data[0], pt1[0], pt2[0], 
                             opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
                             os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                     if opt.save_img or opt.save_video or opt.vis:
@@ -691,7 +691,7 @@ class DataWriter:
                     self.final_result.append(result)
                     if opt.save_hms_data:
                         save_heatmaps(
-                            hms_data[0], pt1[0], pt2[0], 
+                            hm_data[0], pt1[0], pt2[0], 
                             opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
                             os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                     if opt.save_img or opt.save_video or opt.vis or opt.save_hms:
