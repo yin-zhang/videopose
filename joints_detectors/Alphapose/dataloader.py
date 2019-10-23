@@ -684,7 +684,7 @@ class DataWriter:
                     self.final_result.append(result)
                     if opt.save_hms_data:
                         save_heatmaps(
-                            hms_data, pt1, pt2, 
+                            hm_data, pt1, pt2, 
                             opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
                             boxes, scores,
                             os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
