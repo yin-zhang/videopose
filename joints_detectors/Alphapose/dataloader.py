@@ -687,6 +687,7 @@ class DataWriter:
                             hm_data, pt1, pt2, 
                             opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
                             boxes, scores,
+                            result['result']['keypoints'], result['result']['kp_score'],
                             os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                             
                     if opt.save_img or opt.save_video or opt.vis or opt.save_hms:
@@ -823,8 +824,8 @@ def save_mergedHeatmaps(hms, path, c=5, img_res=None):
     plt.savefig(path)
     plt.close()
 
-def save_heatmaps(hms, pt1, pt2, inputResH, inputResW, outputResH, outputResW, boxes, scores, path):
-    np.savez_compressed(path, hms=hms.numpy(), pt1=pt1, pt2=pt2, inputResH=inputResH, inputResW=inputResW, outputResH=outputResH, outputResW=outputResW, boxes=boxes, scores=scores)
+def save_heatmaps(hms, pt1, pt2, inputResH, inputResW, outputResH, outputResW, boxes, scores, res_kps, res_kps_sc, path):
+    np.savez_compressed(path, hms=hms.numpy(), pt1=pt1, pt2=pt2, inputResH=inputResH, inputResW=inputResW, outputResH=outputResH, outputResW=outputResW, boxes=boxes, scores=scores, res_kps=res_kps, res_kps_sc=res_kps_sc)
 
         
 
