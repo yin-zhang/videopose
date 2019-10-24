@@ -690,8 +690,8 @@ class DataWriter:
                         save_heatmaps(
                             hm_data, pt1, pt2, 
                             opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
-                            boxes, scores,
-                            result,
+                            preds_img, preds_scores,
+                            result, 
                             os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                             
                     if opt.save_img or opt.save_video or opt.vis or opt.save_hms:
@@ -828,8 +828,8 @@ def save_mergedHeatmaps(hms, path, c=5, img_res=None):
     plt.savefig(path)
     plt.close()
 
-def save_heatmaps(hms, pt1, pt2, inputResH, inputResW, outputResH, outputResW, boxes, scores, result, path):
-    np.savez_compressed(path, hms=hms.numpy(), pt1=pt1, pt2=pt2, inputResH=inputResH, inputResW=inputResW, outputResH=outputResH, outputResW=outputResW, boxes=boxes, scores=scores, result=result)
+def save_heatmaps(hms, pt1, pt2, inputResH, inputResW, outputResH, outputResW, preds_kps, preds_scores, result, path):
+    np.savez_compressed(path, hms=hms.numpy(), pt1=pt1, pt2=pt2, inputResH=inputResH, inputResW=inputResW, outputResH=outputResH, outputResW=outputResW, preds_kps=preds_kps, preds_scores=preds_scores, result=result)
 
         
 
