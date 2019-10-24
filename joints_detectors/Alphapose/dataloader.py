@@ -378,12 +378,13 @@ class DetectionLoader:
 
 
 class DetectionProcessor:
-    def __init__(self, detectionLoader, queueSize=1024):
+    def __init__(self, detectionLoader, queueSize=1024, output_cropimg=True):
         # initialize the file video stream along with the boolean
         # used to indicate if the thread should be stopped or not
         self.detectionLoader = detectionLoader
         self.stopped = False
         self.datalen = self.detectionLoader.datalen
+        self.output_cropimg = output_cropimg
 
         # initialize the queue used to store data
         if opt.sp:
@@ -418,8 +419,11 @@ class DetectionProcessor:
                         time.sleep(0.2)
                     self.Q.put((None, orig_img, im_name, boxes, scores, None, None))
                     continue
-                inp = im_to_torch(cv2.cvtColor(orig_img, cv2.COLOR_BGR2RGB))
-                inps, pt1, pt2 = crop_from_dets(inp, boxes, inps, pt1, pt2)
+                if self.output_cropimg:
+                    inp = im_to_torch(cv2.cvtColor(orig_img, cv2.COLOR_BGR2RGB))
+                    inps, pt1, pt2 = crop_from_dets(inp, boxes, inps, pt1, pt2)
+                else:
+                    inps, pt1, pt2 = None, None, None
 
                 while self.Q.full():
                     time.sleep(0.2)
@@ -687,7 +691,7 @@ class DataWriter:
                             hm_data, pt1, pt2, 
                             opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW, 
                             boxes, scores,
-                            result['result']['keypoints'], result['result']['kp_score'],
+                            result,
                             os.path.join(opt.outputpath, 'vis', im_name.replace('.jpg', '_hms_data.npz')))
                             
                     if opt.save_img or opt.save_video or opt.vis or opt.save_hms:
@@ -824,8 +828,8 @@ def save_mergedHeatmaps(hms, path, c=5, img_res=None):
     plt.savefig(path)
     plt.close()
 
-def save_heatmaps(hms, pt1, pt2, inputResH, inputResW, outputResH, outputResW, boxes, scores, res_kps, res_kps_sc, path):
-    np.savez_compressed(path, hms=hms.numpy(), pt1=pt1, pt2=pt2, inputResH=inputResH, inputResW=inputResW, outputResH=outputResH, outputResW=outputResW, boxes=boxes, scores=scores, res_kps=res_kps, res_kps_sc=res_kps_sc)
+def save_heatmaps(hms, pt1, pt2, inputResH, inputResW, outputResH, outputResW, boxes, scores, result, path):
+    np.savez_compressed(path, hms=hms.numpy(), pt1=pt1, pt2=pt2, inputResH=inputResH, inputResW=inputResW, outputResH=outputResH, outputResW=outputResW, boxes=boxes, scores=scores, result=result)
 
         
 
