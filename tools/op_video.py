@@ -8,7 +8,7 @@ main_path = os.path.join(path, '..')
 sys.path.insert(0, main_path)
 
 import numpy as np
-import ipdb;pdb = ipdb.set_trace
+#import ipdb;pdb = ipdb.set_trace
 from common.arguments import parse_args
 import torch
 import torch.nn as nn
