@@ -3,7 +3,7 @@ import cv2
 import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, dir_path)
-import ipdb;pdb=ipdb.set_trace
+#import ipdb;pdb=ipdb.set_trace
 import argparse
 from tqdm import tqdm
 from utils import convert
