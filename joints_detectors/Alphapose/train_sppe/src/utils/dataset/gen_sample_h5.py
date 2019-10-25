@@ -20,7 +20,7 @@ def cvt_bbox2evalformat(bbox_path, out_image_path, out_h5):
     imglist_file = open(out_image_path, 'w')
     bb_h5 = h5py.File(out_h5, 'w')
 
-    bb_map = {'xmin':[], 'ymin':[], 'xmax':[], 'ymax':[]}
+    bb = {'xmin':[], 'ymin':[], 'xmax':[], 'ymax':[]}
     for i in range(len(b_images)):
         if b_boxes[i] is not None:
             for box in b_boxes[i]:

@@ -73,10 +73,10 @@ parser.add_argument('--hmGauss', default=1, type=int,
                     help='Heatmap gaussian size')
 
 "----------------------------- Evaluaton -----------------------------"
-parser.add_argument('--indir', dest='inputpath',
+parser.add_argument('--indir', dest='inputpath', type=str,
                     help='image-directory', default="images/input")
-parser.add_argument('--list', dest='inputlist',
+parser.add_argument('--list', dest='inputlist', type=str,
                     help='image-list', default="")
-parser.add_argument('--boxh5', dest='boxh5', help='bounding box infomation for evaluation')
+parser.add_argument('--boxh5', dest='boxh5', type=str, help='bounding box infomation for evaluation')
 
 opt = parser.parse_args()

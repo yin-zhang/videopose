@@ -129,21 +129,12 @@ def prediction(model, img_folder, boxh5, imglist):
     write_json(final_result, './val', for_eval=True)
     return getmap()
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Evaluation')
-    parser.add_argument('--image-folder', type=str, help='images folder')
-    parser.add_argument('--boxh5', type=str, help='bounding box information')
-    parser.add_argument('--image-list', type=str, help='images list')
-    parser.add_argument('--load-model', type=str, help='model path')
-    return parser.parse_args()
-
 if __name__ == '__main__':
-    args = parse_args()
 
     m = createModel().cuda()
     assert os.path.exists(opt.loadModel), 'model file {} not exsit'.format(opt.loadModel)
 
     print('Loading Model from {}'.format(opt.loadModel))
     m.load_state_dict(torch.load(opt.loadModel))
-
-    prediction(m, opt.inputpath, opt.boxh5, opt.image_list)
+    with torch.no_grad():
+        prediction(m, opt.inputpath, opt.boxh5, opt.inputlist)

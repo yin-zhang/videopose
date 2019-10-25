@@ -38,8 +38,11 @@ class Mscoco_minival(data.Dataset):
     def __getitem__(self, index):
         if self.year == 2014:
             imgname = self.images[index]
-        else:
+        elif len(self.images[index].split('_')) > 2:
             imgname = self.images[index].split('_')[2]
+        else:
+            imgname = self.images[index].split('/')[-1]
+            
 
         img_path = os.path.join(self.img_folder, imgname)
         img = load_image(img_path)

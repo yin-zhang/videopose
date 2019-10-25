@@ -56,6 +56,6 @@ if __name__ == "__main__":
         with torch.no_grad():
             (inps, orig_img, im_name, boxes, scores, pt1, pt2) = det_processor.read()
             imgname_list.append(im_name)
-            boxes_list.append(boxes)
+            boxes_list.append(boxes.cpu().numpy() if boxes is not None else boxes)
 
     np.savez(os.path.join(args.outputpath, 'bbox.npz'), images=imgname_list, boxes=boxes_list)

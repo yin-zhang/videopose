@@ -10,7 +10,7 @@ from torchsample.transforms import SpecialCrop, Pad
 import torch.nn.functional as F
 import cv2
 from opt import opt
-
+import imageio
 
 RED = (0, 0, 255)
 GREEN = (0, 255, 0)
@@ -37,7 +37,7 @@ def torch_to_im(img):
 
 def load_image(img_path):
     # H x W x C => C x H x W
-    return im_to_torch(scipy.misc.imread(img_path, mode='RGB'))
+    return im_to_torch(np.asarray(imageio.imread(img_path, pilmode="RGB")))
 
 
 def to_numpy(tensor):
