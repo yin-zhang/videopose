@@ -72,5 +72,11 @@ parser.add_argument('--rotate', default=40, type=float,
 parser.add_argument('--hmGauss', default=1, type=int,
                     help='Heatmap gaussian size')
 
+"----------------------------- Evaluaton -----------------------------"
+parser.add_argument('--indir', dest='inputpath',
+                    help='image-directory', default="images/input")
+parser.add_argument('--list', dest='inputlist',
+                    help='image-list', default="")
+parser.add_argument('--boxh5', dest='boxh5', help='bounding box infomation for evaluation')
 
 opt = parser.parse_args()

@@ -115,7 +115,6 @@ parser.add_argument('--indir', dest='inputpath',
                     help='image-directory', default="images/input")
 parser.add_argument('--list', dest='inputlist',
                     help='image-list', default="")
-parser.add_argument('--boxh5', dest='boxh5', help='bounding box infomation for evaluation')
 # speed
 parser.add_argument('--mode', dest='mode',
                     help='detection mode, fast/normal/accurate', default="accurate")
