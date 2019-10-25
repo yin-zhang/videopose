@@ -12,18 +12,19 @@ from opt import opt
 
 
 class Mscoco_minival(data.Dataset):
-    def __init__(self, annoSet='coco-minival-images-newnms/test-dev'):
-        self.img_folder = '../data/coco/images'    # root image folders
+    # annoSet='coco-minival-images-newnms/test-dev'
+    def __init__(self, img_folder='../data/coco/images', boxh5='./predict/annot/coco-minival-images-newnms/test-dev.h5', imglist='./predict/annot/coco-minival-images-newnms/test-dev_images.txt'):
+        self.img_folder = img_folder    # root image folders
         self.annot = dict()
 
         # Read in annotation information from hdf5 file
         tags = ['xmin', 'ymin', 'xmax', 'ymax']
-        with h5py.File('./predict/annot/' + annoSet + '.h5', 'r') as a:
+        with h5py.File(boxh5, 'r') as a:
             for tag in tags:
                 self.annot[tag] = a[tag][:]
 
         # Load in image file names
-        with open('./predict/annot/' + annoSet + '_images.txt', 'r') as f:
+        with open(imglist, 'r') as f:
             self.images = f.readlines()
         self.images = list(map(lambda x: x.strip('\n'), self.images))
         assert len(self.images) == self.annot['xmin'].shape[0]

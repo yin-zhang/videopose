@@ -16,7 +16,8 @@ from utils.eval import getPrediction
 from utils.eval import getmap
 import os
 import cv2
-
+from models.FastPose import createModel
+import argparse
 
 def gaussian(size):
     '''
@@ -43,9 +44,9 @@ gaussian_kernel.weight.data = g.float()
 gaussian_kernel.cuda()
 
 
-def prediction(model):
+def prediction(model, img_folder, boxh5, imglist):
     model.eval()
-    dataset = Mscoco_minival()
+    dataset = Mscoco_minival(img_folder, boxh5, imglist)
     minival_loader = torch.utils.data.DataLoader(
         dataset, batch_size=1, shuffle=False, num_workers=20, pin_memory=True)
     minival_loader_desc = tqdm(minival_loader)
@@ -128,6 +129,21 @@ def prediction(model):
     write_json(final_result, './val', for_eval=True)
     return getmap()
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='Evaluation')
+    parser.add_argument('--image-folder', type=str, help='images folder')
+    parser.add_argument('--boxh5', type=str, help='bounding box information')
+    parser.add_argument('--image-list', type=str, help='images list')
+    parser.add_argument('--load-model', type=str, help='model path')
+    return parser.parse_args()
 
 if __name__ == '__main__':
-    prediction()
+    args = parse_args()
+
+    m = createModel().cuda()
+    assert os.path.exists(args.load_model), 'model file {} not exsit'.format(args.load_model)
+
+    print('Loading Model from {}'.format(args.load_model))
+    m.load_state_dict(torch.load(opt.load_model))
+
+    prediction(m, args.image_folder, args.boxh5, args.image_list)
