@@ -141,9 +141,9 @@ if __name__ == '__main__':
     args = parse_args()
 
     m = createModel().cuda()
-    assert os.path.exists(args.load_model), 'model file {} not exsit'.format(args.load_model)
+    assert os.path.exists(opt.loadModel), 'model file {} not exsit'.format(opt.loadModel)
 
-    print('Loading Model from {}'.format(args.load_model))
-    m.load_state_dict(torch.load(opt.load_model))
+    print('Loading Model from {}'.format(opt.loadModel))
+    m.load_state_dict(torch.load(opt.loadModel))
 
-    prediction(m, args.image_folder, args.boxh5, args.image_list)
+    prediction(m, opt.inputpath, opt.boxh5, opt.image_list)
