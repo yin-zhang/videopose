@@ -161,8 +161,8 @@ def getPrediction(hms, pt1, pt2, inpH, inpW, resH, resW):
     return preds, preds_tf, maxval
 
 
-def getmap(JsonDir='./val/alphapose-results.json'):
-    ListDir = '../coco-minival500_images.txt'
+def getmap(JsonDir='../../examples/coco_val/alphapose-results.json'):
+    ListDir = '../../examples/coco_val/val2017_imageid.txt'
 
     annType = ['segm', 'bbox', 'keypoints']
     annType = annType[2]  # specify type here
@@ -171,7 +171,7 @@ def getmap(JsonDir='./val/alphapose-results.json'):
 
     # load Ground_truth
     dataType = 'val2014'
-    annFile = '../%s_%s.json' % (prefix, dataType)
+    annFile = '../../examples/coco_val/person_keypoints_val2017.json'
     cocoGt = COCO(annFile)
 
     # load Answer(json)

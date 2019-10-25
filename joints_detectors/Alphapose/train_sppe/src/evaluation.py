@@ -45,6 +45,8 @@ gaussian_kernel.cuda()
 
 
 def prediction(model, img_folder, boxh5, imglist):
+    if torch.cuda.is_available():
+        model = model.cuda()
     model.eval()
     dataset = Mscoco_minival(img_folder, boxh5, imglist)
     minival_loader = torch.utils.data.DataLoader(
@@ -94,7 +96,7 @@ def prediction(model, img_folder, boxh5, imglist):
                 '''
                 Divide inputs into two batches
                 '''
-                assert str(e) == 'CUDA error: out of memory'
+                # assert str(e) == 'CUDA error: out of memory'
                 bn = inp.shape[0]
                 inp1 = inp[: bn // 2]
                 inp2 = inp[bn // 2:]
@@ -126,15 +128,14 @@ def prediction(model, img_folder, boxh5, imglist):
         #    './val', 'vis', im_name), img)
         final_result.append(result)
 
-    write_json(final_result, './val', for_eval=True)
+    write_json(final_result, '../../examples/coco_val/val', for_eval=True)
     return getmap()
 
 if __name__ == '__main__':
 
-    m = createModel().cuda()
+    m = createModel()
     assert os.path.exists(opt.loadModel), 'model file {} not exsit'.format(opt.loadModel)
 
     print('Loading Model from {}'.format(opt.loadModel))
     m.load_state_dict(torch.load(opt.loadModel))
-    with torch.no_grad():
-        prediction(m, opt.inputpath, opt.boxh5, opt.inputlist)
+    prediction(m, opt.inputpath, opt.boxh5, opt.inputlist)
