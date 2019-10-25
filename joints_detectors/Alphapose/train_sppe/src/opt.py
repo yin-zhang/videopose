@@ -71,7 +71,6 @@ parser.add_argument('--rotate', default=40, type=float,
                     help='Degree of rotation augmentation')
 parser.add_argument('--hmGauss', default=1, type=int,
                     help='Heatmap gaussian size')
-
 "----------------------------- Evaluaton -----------------------------"
 parser.add_argument('--indir', dest='inputpath',
                     help='image-directory', default="images/input")
