@@ -86,7 +86,7 @@ def merge_dtbox_gtjoints(box_npz, joint_h5, output_path):
     jinfo = h5py.File(joint_h5, 'r')
     b_images = boxes['images']
     b_boxes = boxes['boxes']
-    j_images = jinfo['imgname']
+    j_images = np.array(jinfo['imgname'])
     j_joints = jinfo['part']
     j_bndbox = jinfo['bndbox']
 
@@ -96,22 +96,35 @@ def merge_dtbox_gtjoints(box_npz, joint_h5, output_path):
     out_images, out_part, out_bndbox = [], [], []
     for i in range(images_num):
         if b_boxes[i] is not None:
+            imgname = b_images[i].split('/')[-2:]
+            j = np.where(j_images == os.path.join(imgname[0], imgname[1]).encode())[0][0]
             for b in range(len(b_boxes[i])):
-                i_lt = np.min(b_boxes[i][b][:2], j_bndbox[i][:2])
-                i_rb = np.max(b_boxes[i][b][2:], j_bndbox[i][2:])
+                i_lt = np.min(b_boxes[i][b][:2], j_bndbox[j][:2])
+                i_rb = np.max(b_boxes[i][b][2:], j_bndbox[j][2:])
                 it_area = (i_rb[0] - i_lt[0]) * (i_rb[1] - i_lt[1])
                 if it_area > 0:
                     a_wh = b_boxes[i][b][2:] - b_boxes[i][b][:2]
-                    b_wh = j_bndbox[i][2:] - j_bndbox[i][:2]
+                    b_wh = j_bndbox[j][2:] - j_bndbox[j][:2]
                     if it_area / (a_wh[0] * a_wh[1] + b_wh[0] * b_wh[1]) > 0.6:
-                        out_images.append(j_images[i])
+                        out_images.append(j_images[j])
                         out_bndbox.append(b_boxes[i][b])
-                        out_part.append(j_joints[i])
+                        out_part.append(j_joints[j])
     f = h5py.File(output_path, 'w')
     f['imgname'] = out_images
     f['part'] = out_part
     f['bndbox'] = out_bndbox
     f.close()
+
+def merge_dtboxes(box_path, end_index, output_path):
+    images, boxes = [], []
+    for i in range(end_index + 1):
+        path = '{}_{}.npz'.format(box_path, i)
+        if os.path.exists(path):
+            logger.info('merge {}'.format(path))
+            f = np.load(path, allow_pickle=True)
+            images += f['images']
+            boxes += f['boxes']
+    np.savez(output_path, images=images, boxes=boxes)    
 
 h36m_config = {
     'train_list':['Human36M_subject1.json', 'Human36M_subject5.json','Human36M_subject6.json', 'Human36M_subject7.json', 'Human36M_subject8.json'],
@@ -123,7 +136,7 @@ def parse_args():
     parser.add_argument('-o', '--output', type=str, help='output file path')
     parser.add_argument('--detect-box-path', type=str, help='bounding box npz file outputed by gen_train_bbox.py')
     parser.add_argument('--gt-joint-path', type=str, help='joints groundtruth file path')
-    parser.add_argument('-m', '--mode', type=str, help='mode, h36m2h5|merge_box_gt|box2eval')
+    parser.add_argument('-m', '--mode', type=str, help='mode, h36m2h5|merge_box_gt|box2eval|merge_boxes')
     parser.add_argument('-d', '--dir', type=str, help='data directory')
     return parser.parse_args()
 
@@ -140,4 +153,10 @@ if __name__ == '__main__':
     elif args.mode == 'box2eval':
         imglist_path, bbh5_path = args.output.split(',')
         cvt_bbox2evalformat(args.detect_box_path, imglist_path, bbh5_path)
+    elif args.mode == 'merge_boxes':
+        arr = args.detect_box_path.split(',')
+        path = arr[0]
+        end_index = int(arr[1])
+        merge_dtboxes(path, end_index, args.output)
+
     
