@@ -122,9 +122,9 @@ def merge_dtboxes(box_path, end_index, output_path):
         if os.path.exists(path):
             logger.info('merge {}'.format(path))
             f = np.load(path, allow_pickle=True)
-            images += f['images']
-            boxes += f['boxes']
-    np.savez(output_path, images=images, boxes=boxes)    
+            images.append(f['images'])
+            boxes.append(f['boxes'])
+    np.savez(output_path, images=np.concatenate(images, axis=0), boxes=np.concatenate(boxes, axis=0))
 
 h36m_config = {
     'train_list':['Human36M_subject1.json', 'Human36M_subject5.json','Human36M_subject6.json', 'Human36M_subject7.json', 'Human36M_subject8.json'],
