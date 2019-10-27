@@ -107,6 +107,8 @@ def prediction(model, img_folder, boxh5, imglist):
 
         with torch.no_grad():
             try:
+                if torch.cuda.is_available():
+                    inp = inp.cuda()
                 kp_preds = model(inp)
                 kp_preds = kp_preds.data[:, :17, :]
             except RuntimeError as e:
@@ -148,7 +150,7 @@ def prediction(model, img_folder, boxh5, imglist):
         #    './val', 'vis', im_name), img)
         final_result.append(result)
 
-    write_json(final_result, '../../examples/coco_val/val', for_eval=True)
+    write_json(final_result, '../../examples/coco_val', for_eval=True)
     return getmap()
 
 if __name__ == '__main__':

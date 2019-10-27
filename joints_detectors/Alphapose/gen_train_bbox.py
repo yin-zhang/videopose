@@ -23,11 +23,11 @@ from pPose_nms import pose_nms, write_json
 args = opt
 
 if __name__ == "__main__":
+    
+    os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
     inputpath = args.inputpath
     inputlist = args.inputlist
     mode = args.mode
-    if not os.path.exists(args.outputpath):
-        os.mkdir(args.outputpath)
 
     if len(inputlist):
         im_names = open(inputlist, 'r').readlines()
@@ -58,4 +58,4 @@ if __name__ == "__main__":
             imgname_list.append(im_name)
             boxes_list.append(boxes.cpu().numpy() if boxes is not None else boxes)
 
-    np.savez(os.path.join(args.outputpath, 'bbox.npz'), images=imgname_list, boxes=boxes_list)
+    np.savez(args.outputpath, images=imgname_list, boxes=boxes_list)

@@ -4,6 +4,7 @@ import logging
 import os
 import numpy as np
 import argparse
+from tqdm import tqdm
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -88,22 +89,24 @@ def merge_dtbox_gtjoints(box_npz, joint_h5, output_path):
     b_boxes = boxes['boxes']
     j_images = np.array(jinfo['imgname'])
     j_joints = jinfo['part']
-    j_bndbox = jinfo['bndbox']
+    j_bndbox = np.array(jinfo['bndbox'])
 
     assert len(b_images) == len(j_images), 'detected images count {:d} groundtruth images count {:d}'.format(len(b_images), len(j_images))
     images_num = len(b_images)
 
     out_images, out_part, out_bndbox = [], [], []
-    for i in range(images_num):
+    images_num_desc = tqdm(range(images_num))
+    for i in images_num_desc:
         if b_boxes[i] is not None:
             imgname = b_images[i].split('/')[-2:]
-            j = np.where(j_images == os.path.join(imgname[0], imgname[1]).encode())[0][0]
+            imgname = os.path.join(imgname[0], '{}_{:06d}.jpg'.format(imgname[0],int(imgname[1].split('.')[0]))).encode()
+            j = int(np.where(j_images == imgname)[0][0])
             for b in range(len(b_boxes[i])):
-                i_lt = np.min(b_boxes[i][b][:2], j_bndbox[j][:2])
-                i_rb = np.max(b_boxes[i][b][2:], j_bndbox[j][2:])
+                i_lt = np.minimum(b_boxes[i][b,:2], j_bndbox[j][:2])
+                i_rb = np.maximum(b_boxes[i][b,2:], j_bndbox[j][2:])
                 it_area = (i_rb[0] - i_lt[0]) * (i_rb[1] - i_lt[1])
                 if it_area > 0:
-                    a_wh = b_boxes[i][b][2:] - b_boxes[i][b][:2]
+                    a_wh = b_boxes[i][b,2:] - b_boxes[i][b,:2]
                     b_wh = j_bndbox[j][2:] - j_bndbox[j][:2]
                     if it_area / (a_wh[0] * a_wh[1] + b_wh[0] * b_wh[1]) > 0.6:
                         out_images.append(j_images[j])
