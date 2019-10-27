@@ -123,7 +123,7 @@ def postprocess(output):
 
     return p
 
-def getIntegral7x7Joints(hms, pt1, pt2, inpH, inpW, resH, resW):
+def getIntegral7x7Joints(hm, pt1, pt2, inpH, inpW, resH, resW):
     w, h = hm.shape[1], hm.shape[0]
         
     peak = (hm > 0.05)[1:-1,1:-1]
@@ -166,9 +166,9 @@ def getIntegral7x7Joints(hms, pt1, pt2, inpH, inpW, resH, resW):
         peak_pp[0,i] = sum_y / sum_score
         peak_pp[1,i] = sum_x / sum_score
     
-    peak_tf = np.zeros([peak_pp.shape[1], peak_pp.shape[0]])
-    for i in range(peak_tf.shape(0)):
-        peak_tf[i] = transformBoxInvert(peak_pp[::-1,i], pt1, pt2, inpH, inpW, resH, resW)
+    peak_tf = torch.zeros([peak_pp.shape[1], peak_pp.shape[0]])
+    for i in range(peak_tf.shape[0]):
+        peak_tf[i] = transformBoxInvert(torch.from_numpy(peak_pp[::-1,i].copy()), pt1, pt2, inpH, inpW, resH, resW)
     return peak_tf, peak_val
 
 def getPrediction(hms, pt1, pt2, inpH, inpW, resH, resW):
