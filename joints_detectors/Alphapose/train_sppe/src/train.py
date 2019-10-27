@@ -108,7 +108,7 @@ def valid(val_loader, m, criterion, optimizer, writer):
 
 
 def main():
-
+    print(opt)
     # Model Initialize
     m = createModel().cuda()
     if opt.loadModel:
@@ -120,12 +120,13 @@ def main():
                 ckp_param = ckp[name]
                 if ckp_param.shape == param.shape:
                     param.copy_(ckp_param)
+                    print(name, 'copy successfully')
                 else:
                     print(name, 'shape is inconsistent with checkpoint')
             else:
                 print(name, 'can not be found in checkpoint')
 
-        m.load_state_dict(torch.load(opt.loadModel))
+        # m.load_state_dict(torch.load(opt.loadModel))
         if not os.path.exists("../exp/{}/{}".format(opt.dataset, opt.expID)):
             try:
                 os.mkdir("../exp/{}/{}".format(opt.dataset, opt.expID))

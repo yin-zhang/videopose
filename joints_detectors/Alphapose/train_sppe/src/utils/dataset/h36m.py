@@ -58,12 +58,11 @@ class H36M(data.Dataset):
             part = self.part_coco_val[index]
             bndbox = self.bndbox_coco_val[index]
             imgname = self.imgname_coco_val[index]
+        imgname = imgname.decode().split('/')[-2:]
+        imgname[1] = str(int(imgname[1].split('.')[0].split('_')[-1])) + '.' +  imgname[1].split('.')[1]
+        img_path = os.path.join(self.img_folder, imgname[0], imgname[1])
 
-        imgname = reduce(lambda x, y: x + y,
-                         map(lambda x: chr(int(x)), imgname))
-        img_path = os.path.join(self.img_folder, imgname)
-
-        metaData = generateSampleBox(img_path, bndbox, part, self.nJoints,
+        metaData = generateSampleBox(img_path, bndbox.reshape(1,-1), part, self.nJoints,
                                      'h36m', sf, self, train=self.is_train)
 
         inp, out, setMask = metaData
