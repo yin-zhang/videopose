@@ -51,9 +51,9 @@ def add_candidate_joints(result, hms, pt1, pt2, inpW, inpH, oupW, oupH):
         for k in range(hms[pick].shape[0]):
             kps, sco = getIntegral7x7Joints(hms[pick][k], pt1[pick], pt2[pick], inpH, inpW, oupH, oupW)
             if torch.norm(res['keypoints'][k] - kps[0]).item() < 5:
-                print('bad match kps {} can {}'.format(res['keypoints'][k], kps[0]))
-            else:
                 print('good match kps {} can {}'.format(res['keypoints'][k], kps[0]))
+            else:
+                print('bad match kps {} can {}'.format(res['keypoints'][k], kps[0]))
             if len(sco) > 1 and sco[1] > 0.05:
                 can_kps.append(kps[1])
                 can_sco.append(sco[1])

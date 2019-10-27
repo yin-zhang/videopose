@@ -112,11 +112,46 @@ def merge_dtbox_gtjoints(box_npz, joint_h5, output_path):
                         out_images.append(j_images[j])
                         out_bndbox.append(b_boxes[i][b])
                         out_part.append(j_joints[j])
+    
+    
+    
+    for i in images_num_desc:
+        imgname = out_images[i]
+    
     f = h5py.File(output_path, 'w')
     f['imgname'] = out_images
     f['part'] = out_part
     f['bndbox'] = out_bndbox
     f.close()
+
+def rearrange_h5(h5_path, output_path):
+    # place training data before validation data
+    h36m_training = ['01', '05', '06', '07', '08']
+    h36m_validation = ['09', '11']
+
+    f = h5py.File(h5_path, 'r')
+    image_num = len(f['imgname'])
+    start, end = 0, image_num-1
+    last_training_idx = start
+    while start < end:
+        if f['imgname'][start].split('_')[1] not in h36m_training:
+            while end > start and f['imgname'][end].split('_')[1] not in h36m_training:
+                end -= 1
+            if end > start:
+                f['imgname'][start], f['imgname'][end] = f['imgname'][end], f['imgname'][start]
+                f['part'][start], f['part'][end] = f['part'][end], f['part'][start]
+                f['bndbox'][start], f['bndbox'][end] = f['bndbox'][end], f['bndbox'][start]
+                end -= 1
+                last_training_idx = start                
+                start += 1
+        else:
+            last_training_idx = start
+            start += 1
+
+    for i in range(image_num):
+        assert (i <= last_training_idx and f['imgname'][i].split('_')[1] in h36m_training) or (i > last_training_idx and f['imgname'][i].split('_')[1] in h36m_validation)
+
+    print('start of validation:', last_training_idx + 1)
 
 def merge_dtboxes(box_path, end_index, output_path):
     images, boxes = [], []
@@ -137,9 +172,10 @@ h36m_config = {
 def parse_args():
     parser = argparse.ArgumentParser(description='Preparation of data')
     parser.add_argument('-o', '--output', type=str, help='output file path')
+    parser.add_argument('-i', '--input', type=str, help='input file path')
     parser.add_argument('--detect-box-path', type=str, help='bounding box npz file outputed by gen_train_bbox.py')
     parser.add_argument('--gt-joint-path', type=str, help='joints groundtruth file path')
-    parser.add_argument('-m', '--mode', type=str, help='mode, h36m2h5|merge_box_gt|box2eval|merge_boxes')
+    parser.add_argument('-m', '--mode', type=str, help='mode, h36m2h5|merge_box_gt|box2eval|merge_boxes|rearrange_h5')
     parser.add_argument('-d', '--dir', type=str, help='data directory')
     return parser.parse_args()
 
@@ -161,5 +197,7 @@ if __name__ == '__main__':
         path = arr[0]
         end_index = int(arr[1])
         merge_dtboxes(path, end_index, args.output)
+    elif args.mode == 'rearrange_h5':
+        rearrange_h5(args.input, args.output)
 
     
