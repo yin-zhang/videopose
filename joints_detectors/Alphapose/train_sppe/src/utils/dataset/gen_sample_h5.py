@@ -5,6 +5,7 @@ import os
 import numpy as np
 import argparse
 from tqdm import tqdm
+import copy
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -130,17 +131,22 @@ def rearrange_h5(h5_path, output_path):
     h36m_validation = ['09', '11']
 
     f = h5py.File(h5_path, 'r')
-    image_num = len(f['imgname'])
+    img_list = f['imgname'][:]
+    part_list = f['part'][:]
+    bndbox_list = f['bndbox'][:]
+    f.close()
+
+    image_num = len(img_list)
     start, end = 0, image_num-1
     last_training_idx = start
     while start < end:
-        if f['imgname'][start].split('_')[1] not in h36m_training:
-            while end > start and f['imgname'][end].split('_')[1] not in h36m_training:
+        if img_list[start].decode().split('_')[1] not in h36m_training:
+            while end > start and img_list[end].decode().split('_')[1] not in h36m_training:
                 end -= 1
             if end > start:
-                f['imgname'][start], f['imgname'][end] = f['imgname'][end], f['imgname'][start]
-                f['part'][start], f['part'][end] = f['part'][end], f['part'][start]
-                f['bndbox'][start], f['bndbox'][end] = f['bndbox'][end], f['bndbox'][start]
+                img_list[start], img_list[end] = img_list[end], img_list[start]
+                part_list[start], part_list[end] = part_list[end], part_list[start]
+                bndbox_list[start], bndbox_list[end] = bndbox_list[end], bndbox_list[start]
                 end -= 1
                 last_training_idx = start                
                 start += 1
@@ -149,9 +155,14 @@ def rearrange_h5(h5_path, output_path):
             start += 1
 
     for i in range(image_num):
-        assert (i <= last_training_idx and f['imgname'][i].split('_')[1] in h36m_training) or (i > last_training_idx and f['imgname'][i].split('_')[1] in h36m_validation)
+        assert (i <= last_training_idx and img_list[i].decode().split('_')[1] in h36m_training) or (i > last_training_idx and img_list[i].decode().split('_')[1] in h36m_validation)
 
     print('start of validation:', last_training_idx + 1)
+    f = h5py.File(output_path, 'w')
+    f['imgname'] = img_list
+    f['part'] = part_list
+    f['bndbox'] = bndbox_list
+    f.close()
 
 def merge_dtboxes(box_path, end_index, output_path):
     images, boxes = [], []

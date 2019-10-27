@@ -146,7 +146,7 @@ def getIntegral7x7Joints(hm, pt1, pt2, inpH, inpW, resH, resW):
         peak_top = np.argsort(peak_val)[:(-3 if peak_val.shape[0] > 1 else -2):-1]
         peak_idx = np.array(peak.nonzero())[:,peak_top]
         peak_val = peak_val[peak_top]
-    assert peak_val[0] == hm.max() and peak_val[0] > 0
+    # assert peak_val[0] == hm.max() and peak_val[0] > 0
 
     peak_pp = peak_idx.astype(np.float32)
     # average 7x7 around peak as final peak
