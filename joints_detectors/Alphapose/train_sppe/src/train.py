@@ -113,6 +113,18 @@ def main():
     m = createModel().cuda()
     if opt.loadModel:
         print('Loading Model from {}'.format(opt.loadModel))
+
+        ckp = torch.load(opt.loadModel)
+        for name,param in m.state_dict().items():
+            if name in ckp:
+                ckp_param = ckp[name]
+                if ckp_param.shape == param.shape:
+                    param.copy_(ckp_param)
+                else:
+                    print(name, 'shape is inconsistent with checkpoint')
+            else:
+                print(name, 'can not be found in checkpoint')
+
         m.load_state_dict(torch.load(opt.loadModel))
         if not os.path.exists("../exp/{}/{}".format(opt.dataset, opt.expID)):
             try:
