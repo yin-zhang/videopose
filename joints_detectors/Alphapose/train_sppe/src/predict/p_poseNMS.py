@@ -109,6 +109,7 @@ def pose_nms(bboxes, pose_preds, pose_scores):
             'keypoints': merge_pose - 0.3,
             'kp_score': merge_score,
             'proposal_score': torch.mean(merge_score) + 1.25 * max(merge_score)
+            'pick_idx': pick[j]
         })
 
     return final_result

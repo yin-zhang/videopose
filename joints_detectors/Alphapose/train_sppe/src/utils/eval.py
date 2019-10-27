@@ -123,6 +123,53 @@ def postprocess(output):
 
     return p
 
+def getIntegral7x7Joints(hms, pt1, pt2, inpH, inpW, resH, resW):
+    w, h = hm.shape[1], hm.shape[0]
+        
+    peak = (hm > 0.05)[1:-1,1:-1]
+    peak = peak & (hm[1:-1,1:-1] > hm[:-2,  1:-1])
+    peak = peak & (hm[1:-1,1:-1] > hm[:-2,  :-2])
+    peak = peak & (hm[1:-1,1:-1] > hm[1:-1:,:-2])
+    peak = peak & (hm[1:-1,1:-1] > hm[2:,   :-2]) 
+    peak = peak & (hm[1:-1,1:-1] > hm[2:,   1:-1])
+    peak = peak & (hm[1:-1,1:-1] > hm[2:,   2:])
+    peak = peak & (hm[1:-1,1:-1] > hm[1:-1, 2:])
+    peak = peak & (hm[1:-1,1:-1] > hm[:-2,  2:])
+    peak = np.pad(peak, ((1,1),(1,1)), mode='constant', constant_values=False)
+
+    peak_val = hm[peak]
+    if peak_val.shape[0] == 0:
+        peak_val = np.array([hm.max()])
+        idx = hm.argmax()
+        peak_idx = np.array([[idx//w], [idx%w]])
+    else:
+        peak_top = np.argsort(peak_val)[:(-3 if peak_val.shape[0] > 1 else -2):-1]
+        peak_idx = np.array(peak.nonzero())[:,peak_top]
+        peak_val = peak_val[peak_top]
+    assert peak_val[0] == hm.max() and peak_val[0] > 0
+
+    peak_pp = peak_idx.astype(np.float32)
+    # average 7x7 around peak as final peak
+    for i in range(peak_idx.shape[1]):
+        pY, pX = int(peak_idx[0,i]), int(peak_idx[1,i])
+        f = 7
+        sum_score, sum_x, sum_y = 0, 0, 0
+        for x in range(f):
+            for y in range(f):
+                tx = pX - f // 2 + x
+                ty = pY - f // 2 + y
+                if tx < 0 or tx >= w or ty <= 0 or ty >= h: continue
+                score = hm[ty,tx]
+                sum_score += score
+                sum_x += tx * score
+                sum_y += ty * score
+        peak_pp[0,i] = sum_y / sum_score
+        peak_pp[1,i] = sum_x / sum_score
+    
+    peak_tf = np.zeros([peak_pp.shape[1], peak_pp.shape[0]])
+    for i in range(peak_tf.shape(0)):
+        peak_tf[i] = transformBoxInvert(peak_pp[::-1,i], pt1, pt2, inpH, inpW, resH, resW)
+    return peak_tf, peak_val
 
 def getPrediction(hms, pt1, pt2, inpH, inpW, resH, resW):
     assert hms.dim() == 4, 'Score maps should be 4-dim'

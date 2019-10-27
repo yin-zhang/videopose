@@ -43,6 +43,23 @@ g = g.repeat(17, 1, 1, 1)
 gaussian_kernel.weight.data = g.float()
 gaussian_kernel.cuda()
 
+def add_candidate_joints(result, hms, pt1, pt2, inpW, inpH, oupW, oupH):
+    for res in result:
+        pick = res['pick']
+        can_kps = []
+        can_sco = []
+        for k in range(hms[pick].shape[0]):
+            kps, sco = getIntegral7x7Joints(hms[pick][k], pt1[pick], pt2[pick], inpH, inpW, oupH, oupW)
+            assert np.linalg.norm(res['keypoints'][k] - kps[0]) < 5, 'kps {} can {}'.format(res['keypoints'][k], kps[0])
+            if len(sco) > 1 and sco[1] > 0.05:
+                can_kps.append(kps[1])
+                can_sco.append(sco[1])
+            else:
+                can_kps.append(None)
+                can_sco.append(0)
+        res['can_kps'] = can_kps
+        res['can_sco'] = can_sco
+
 
 def prediction(model, img_folder, boxh5, imglist):
     if torch.cuda.is_available():
@@ -116,6 +133,9 @@ def prediction(model, img_folder, boxh5, imglist):
             )
 
             result = pose_nms(box, preds_img, preds_scores)
+
+            add_candidate_joints(result, kp_preds.cpu().numpy(), pt1.numpy(), pt2.numpy(), opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW)
+
             result = {
                 'imgname': im_name,
                 'result': result
