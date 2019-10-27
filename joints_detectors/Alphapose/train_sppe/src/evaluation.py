@@ -43,17 +43,16 @@ g = g.repeat(17, 1, 1, 1)
 gaussian_kernel.weight.data = g.float()
 gaussian_kernel.cuda()
 
-def add_candidate_joints(result, hms, pt1, pt2, inpW, inpH, oupW, oupH):
+def add_candidate_joints(result, hms, pt1, pt2, inpH, inpW, oupH, oupW):
     for res in result:
         pick = res['pick_idx']
+        dist = res['dist']
         can_kps = []
         can_sco = []
         for k in range(hms[pick].shape[0]):
             kps, sco = getIntegral7x7Joints(hms[pick][k], pt1[pick], pt2[pick], inpH, inpW, oupH, oupW)
-            if torch.norm(res['keypoints'][k] - kps[0]).item() < 5:
+            if torch.norm(res['keypoints'][k] - kps[0]).item() > dist:
                 print('bad match kps {} can {}'.format(res['keypoints'][k], kps[0]))
-            else:
-                print('good match kps {} can {}'.format(res['keypoints'][k], kps[0]))
             if len(sco) > 1 and sco[1] > 0.05:
                 can_kps.append(kps[1])
                 can_sco.append(sco[1])
@@ -74,12 +73,8 @@ def prediction(model, img_folder, boxh5, imglist):
     minival_loader_desc = tqdm(minival_loader)
 
     final_result = []
-    count = 0
     tmp_inp = {}
     for i, (inp, box, im_name, metaData) in enumerate(minival_loader_desc):
-        if count > 10:
-            break
-        count += 1
         #inp = torch.autograd.Variable(inp.cuda(), volatile=True)
         pt1, pt2, ori_inp = metaData
         #with torch.autograd.profiler.profile(use_cuda=True) as prof:
