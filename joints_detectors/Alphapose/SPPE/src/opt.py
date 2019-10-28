@@ -23,7 +23,7 @@ parser.add_argument('--addDPG', default=False, type=bool,
 parser.add_argument('--netType', default='hgPRM', type=str,
                     help='Options: hgPRM | resnext')
 parser.add_argument('--loadModel', default=None, type=str,
-                    help='Provide full path to a previously trained model')
+                    help='Provide full path to a previously trained model')                    
 parser.add_argument('--Continue', default=False, type=bool,
                     help='Pick up where an experiment left off')
 parser.add_argument('--nFeats', default=256, type=int,

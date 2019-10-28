@@ -33,6 +33,32 @@ def gaussian(size):
     g = g[np.newaxis, :]
     return g
 
+def bbox_iou(box1, box2):
+    """
+    Returns the IoU of two bounding boxes 
+    
+    
+    """
+    #Get the coordinates of bounding boxes
+    b1_x1, b1_y1, b1_x2, b1_y2 = box1[:,0], box1[:,1], box1[:,2], box1[:,3]
+    b2_x1, b2_y1, b2_x2, b2_y2 = box2[:,0], box2[:,1], box2[:,2], box2[:,3]
+    
+    #get the corrdinates of the intersection rectangle
+    inter_rect_x1 =  torch.max(b1_x1, b2_x1)
+    inter_rect_y1 =  torch.max(b1_y1, b2_y1)
+    inter_rect_x2 =  torch.min(b1_x2, b2_x2)
+    inter_rect_y2 =  torch.min(b1_y2, b2_y2)
+    
+    #Intersection area
+    
+    inter_area = torch.max(inter_rect_x2 - inter_rect_x1 + 1,torch.zeros(inter_rect_x2.shape).cuda())*torch.max(inter_rect_y2 - inter_rect_y1 + 1, torch.zeros(inter_rect_x2.shape).cuda())
+    #Union Area
+    b1_area = (b1_x2 - b1_x1 + 1)*(b1_y2 - b1_y1 + 1)
+    b2_area = (b2_x2 - b2_x1 + 1)*(b2_y2 - b2_y1 + 1)
+    
+    iou = inter_area / (b1_area + b2_area - inter_area)
+    
+    return iou
 
 gaussian_kernel = nn.Conv2d(17, 17, kernel_size=4 * 1 + 1,
                             stride=1, padding=2, groups=17, bias=False)
@@ -132,13 +158,30 @@ def select_best_candidate(gt_json, final_result):
                             kps[i] = can_kps[i].numpy()
         return kps
 
+    def check_pose(pose0, pose1, threshold=0.5):
+        box0_lt = np.min(pose0, axis=0)
+        box0_rb = np.max(pose0, axis=0)
+        
+        box1_lt = np.min(pose1, axis=0)
+        box1_rb = np.max(pose1, axis=0)
+
+        box0 = np.array([box0_lt[0], box0_lt[1], box0_rb[0], box0_rb[1]])
+        box1 = np.array([box1_lt[0], box1_lt[1], box1_rb[0], box1_rb[1]])
+
+        if bbox_iou(box0, box1) < threshold:
+            return False
+        return True
+
     for result in final_result:
         image_id = int(result['imgname'].split('/')[-1].split('.')[0].split('_')[-1])
         for pose in result['result']:
             kps = pose['keypoints'].numpy()
             best_match_pose = match_pose(kps.reshape(-1), gt_map[image_id])
-            refine_pose = select_best_candidate(kps, pose['can_kps'], best_match_pose)
-            pose['keypoints'] = torch.from_numpy(refine_pose)
+            if check_pose(kps, np.array(best_match_pose).reshape(-1,3)[:,2]):
+                refine_pose = select_best_candidate(kps, pose['can_kps'], best_match_pose)
+                pose['keypoints'] = torch.from_numpy(refine_pose)
+            else:
+                print('check pose not pass!')
     
 
 def prediction(model, img_folder, boxh5, imglist):
