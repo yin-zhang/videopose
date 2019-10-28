@@ -157,7 +157,9 @@ def main():
         )
     else:
         raise Exception
-
+    if opt.loadOptimizer:
+        optimizer.load_state_dict(torch.load(opt.loadOptimizer))
+        
     writer = SummaryWriter(
         '.tensorboard/{}/{}'.format(opt.dataset, opt.expID))
 
