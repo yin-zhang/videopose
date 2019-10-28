@@ -78,14 +78,19 @@ def add_candidate_joints(result, hms, pt1, pt2, inpH, inpW, oupH, oupW):
         can_sco = []
         for k in range(hms[pick].shape[0]):
             kps, sco = getIntegral7x7Joints(hms[pick][k], pt1[pick], pt2[pick], inpH, inpW, oupH, oupW)
-            if torch.norm(res['keypoints'][k] - kps[0]).item() > dist:
-                print('bad match kps {} can {}'.format(res['keypoints'][k], kps[0]))
-            if len(sco) > 1 and sco[1] > 0.05:
-                can_kps.append(kps[1])
-                can_sco.append(sco[1])
-            else:
-                can_kps.append(None)
-                can_sco.append(0)
+            min_dst = np.finfo(np.float32).max
+            min_idx = 0
+            for i in range(kps.shape[0]):
+                d = torch.norm(res['keypoints'][k] - kps[i]).item()
+                if min_dst > d:
+                    min_dst = d
+                    min_idx = i                    
+                if sco[i] > 0.05:
+                    can_kps.append(kps[i])
+                    can_sco.append(sco[i])
+            if min_dst > dist:
+                print('bad match kps {} can {}, min_dist {}, dist {}'.format(res['keypoints'][k], kps[min_idx], min_dst, dist))
+            
         res['can_kps'] = can_kps
         res['can_sco'] = can_sco
 
@@ -102,7 +107,9 @@ def select_best_candidate(gt_json, final_result):
             gt_map[g['image_id']].append(g['keypoints'])
         else:
             gt_map[g['image_id']] = [g['keypoints']]
-    
+    gt_image_num = len(gt_map.keys())
+    print('Number of groundtruth images:', gt_image_num)
+
     def compute_pose_dist(pose, pose_gt):
         n = len(pose_gt) // 3
         d = 0
@@ -111,55 +118,64 @@ def select_best_candidate(gt_json, final_result):
             if pose_gt[i*3+2] > 0:
                 d += np.linalg.norm(np.array(pose[i*2:i*2+2]) - np.array(pose_gt[i*3:i*3+2]))
                 v += 1
-        return d / v if v > 0 else np.finfo(np.float32).max
+        return d / v if v > 0 else -1
 
     def match_pose(pose, gt_list):
-        if len(gt_list) == 1:
-            return gt_list[0]
-        else:
+        mp = gt_list[0]
+        if len(gt_list) > 1:
             min_idx = 0
             min_dst = np.finfo(np.float32).max
             for i, gt in enumerate(gt_list):
                 d = compute_pose_dist(pose, gt)
-                if d < min_dst:
+                if d > 0 and d < min_dst:
                     min_dst = d
                     min_idx = i
-            return gt_list[min_idx]
+            mp = gt_list[min_idx]
+        if check_pose(pose, mp):
+            return mp
+        else:
+            return None
 
     def get_min_joint(joint, can_joints):
         min_d = np.finfo(np.float32).max
         min_j = None
-        for j in can_joints:
+        min_i = 0
+        for i, j in enumerate(can_joints):
             d = np.linalg.norm(joint-j)
             if d < min_d:
                 min_d = d
                 min_j = j
-        return min_j
+                min_i = i
+        return min_j, min_i
 
     def select_best_candidate(kps, can_kps, gt_kps):
         n = len(gt_kps) // 3
         assert n == kps.shape[0]
+        change = False
         for i in range(n):
             if gt_kps[i*3+2] > 0:                
                 if i in mirror_map:
                     if i < mirror_map[i]:
                         can_joints = [kps[i], kps[mirror_map[i]]]
-                        if can_kps[i] is not None: 
-                            can_joints.append(can_kps[i].numpy())
-                        if can_kps[mirror_map[i]] is not None: 
-                            can_joints.append(can_kps[mirror_map[i]].numpy())
-                        lj = get_min_joint(np.array(gt_kps[i*3:i*3+2]), can_joints)
-                        rj = get_min_joint(np.array(gt_kps[mirror_map[i]*3:mirror_map[i]*3+2]), can_joints)
+                        if can_kps[i] is not None:
+                            can_joints += [c.numpy() for c in can_kps[i]]
+                        if can_kps[mirror_map[i]] is not None:
+                            can_joints += [c.numpy() for c in can_kps[mirror_map[i]]]]
+
+                        lj, l_idx = get_min_joint(np.array(gt_kps[i*3:i*3+2]), can_joints)
+                        rj, r_idx = get_min_joint(np.array(gt_kps[mirror_map[i]*3:mirror_map[i]*3+2]), can_joints)
                         if np.linalg.norm(lj-rj) > 2:
                             kps[i] = lj
                             kps[mirror_map[i]] = rj
-                else:
-                    if can_kps[i] is not None:
-                        min_d = np.linalg.norm(kps[i] - np.array(gt_kps[i*3:i*3+2]))
-                        can_d = np.linalg.norm(can_kps[i].numpy() - np.array(gt_kps[i*3:i*3+2]))
-                        if can_d < min_d:
-                            kps[i] = can_kps[i].numpy()
-        return kps
+                            change |= l_idx != 0 or r_idx != 1
+                else:                    
+                    if len(can_kps[i]) > 0:
+                        can_joints = [kps[i]]
+                        can_joints += [c.numpy() for c in can_kps[i]]
+                        kps[i], idx = get_min_joint(np.array(gt_kps[i*3:i*3+2]), can_joints)
+                        change |= idx != 0
+
+        return kps, change
 
     def check_pose(pose0, pose_gt, threshold=0.5):
         pose1 = np.array(pose_gt).reshape(-1,3)
@@ -182,18 +198,29 @@ def select_best_candidate(gt_json, final_result):
             return False
         return True
 
+    rs_image_num = len(final_result)
+    print('Number of detected images:', rs_image_num)
+
+    change_num = 0
+    all_detected = 0
     for result in final_result:
         image_id = int(result['imgname'].split('/')[-1].split('.')[0].split('_')[-1])
-        if image_id not in gt_map: continue
+        if image_id not in gt_map: 
+            print('image', image_id, 'doesnt have groundtruth')
+            continue
+
         for pose in result['result']:
+            all_detected += 1
             kps = pose['keypoints'].numpy()
             best_match_pose = match_pose(kps.reshape(-1), gt_map[image_id])
-            if check_pose(kps, best_match_pose):
-                refine_pose = select_best_candidate(kps, pose['can_kps'], best_match_pose)
+            if best_match_pose is not None:
+                refine_pose, change = select_best_candidate(kps, pose['can_kps'], best_match_pose)
+                if change:
+                    change_num += 1
                 pose['keypoints'] = torch.from_numpy(refine_pose)
             else:
-                print('check pose not pass!')
-    
+                print('check pose not pass!', best_match_pose)
+    print('Number of refined pose: {:d}/{:d}'.format(change_num, all_detected))
 
 def prediction(model, img_folder, boxh5, imglist):
     if torch.cuda.is_available():
@@ -269,7 +296,7 @@ def prediction(model, img_folder, boxh5, imglist):
 
             result = pose_nms(box, preds_img, preds_scores)
             
-            # add_candidate_joints(result, kp_preds.cpu().numpy(), pt1.numpy(), pt2.numpy(), opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW)
+            add_candidate_joints(result, kp_preds.cpu().numpy(), pt1.numpy(), pt2.numpy(), opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW)
             
             result = {
                 'imgname': im_name,
@@ -283,7 +310,7 @@ def prediction(model, img_folder, boxh5, imglist):
         #    './val', 'vis', im_name), img)
         final_result.append(result)
     # np.savez('../../examples/coco_val/final_result.npz', result=result)
-    # select_best_candidate('../../examples/coco_val/person_keypoints_val2017.json', final_result)
+    select_best_candidate('../../examples/coco_val/person_keypoints_val2017.json', final_result)
     write_json(final_result, '../../examples/coco_val', for_eval=True)
     return getmap()
 

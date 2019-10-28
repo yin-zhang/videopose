@@ -123,7 +123,7 @@ def postprocess(output):
 
     return p
 
-def getIntegral7x7Joints(hm, pt1, pt2, inpH, inpW, resH, resW):
+def getIntegral7x7Joints(hm, pt1, pt2, inpH, inpW, resH, resW, all_can=False):
     w, h = hm.shape[1], hm.shape[0]
         
     peak = (hm > 0.05)[1:-1,1:-1]
@@ -143,9 +143,12 @@ def getIntegral7x7Joints(hm, pt1, pt2, inpH, inpW, resH, resW):
         idx = hm.argmax()
         peak_idx = np.array([[idx//w], [idx%w]])
     else:
-        peak_top = np.argsort(peak_val)[:(-3 if peak_val.shape[0] > 1 else -2):-1]
-        peak_idx = np.array(peak.nonzero())[:,peak_top]
-        peak_val = peak_val[peak_top]
+        if not all_can:
+            peak_top = np.argsort(peak_val)[:(-3 if peak_val.shape[0] > 1 else -2):-1]
+            peak_idx = np.array(peak.nonzero())[:,peak_top]
+            peak_val = peak_val[peak_top]
+        else:
+            peak_idx = np.array(peak.nonzero())
     # assert peak_val[0] == hm.max() and peak_val[0] > 0
 
     peak_pp = peak_idx.astype(np.float32)
