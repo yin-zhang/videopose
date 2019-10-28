@@ -15,7 +15,7 @@ from evaluation import prediction
 
 from tensorboardX import SummaryWriter
 import os
-
+os.environ["CUDA_VISIBLE_DEVICES"]='2,3,4,5,6,7'
 
 def train(train_loader, m, criterion, optimizer, writer):
     lossLogger = DataLogger()
@@ -158,7 +158,7 @@ def main():
     else:
         raise Exception
     if opt.loadOptimizer:
-        optimizer.load_state_dict(torch.load(opt.loadOptimizer))
+        optimizer = torch.load(opt.loadOptimizer)
         
     writer = SummaryWriter(
         '.tensorboard/{}/{}'.format(opt.dataset, opt.expID))

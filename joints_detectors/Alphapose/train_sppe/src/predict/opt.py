@@ -26,6 +26,8 @@ parser.add_argument('--loadModel', default=None, type=str,
                     help='Provide full path to a previously trained model')
 parser.add_argument('--nClasses', default=17, type=int,
                     help='Number of output channel')
+parser.add_argument('--loadOptimizer', default=None, type=str,
+                    help='Provide full path to a previously optimizer info')
 
 "----------------------------- Hyperparameter options -----------------------------"
 parser.add_argument('--LR', default=1e-3, type=float,
