@@ -125,7 +125,11 @@ def main():
                     print(name, 'shape is inconsistent with checkpoint')
             else:
                 print(name, 'can not be found in checkpoint')
-
+            if param not in m.conv_out.parameters():
+                param.requires_grad = False
+            else:
+                print(name, 'requires_grad = True')
+        
         # m.load_state_dict(torch.load(opt.loadModel))
         if not os.path.exists("../exp/{}/{}".format(opt.dataset, opt.expID)):
             try:
