@@ -153,6 +153,7 @@ def getIntegral7x7Joints(hm, pt1, pt2, inpH, inpW, resH, resW, all_can=False):
 
     peak_pp = peak_idx.astype(np.float32)
     # average 7x7 around peak as final peak
+    '''
     for i in range(peak_idx.shape[1]):
         pY, pX = int(peak_idx[0,i]), int(peak_idx[1,i])
         f = 7
@@ -163,12 +164,13 @@ def getIntegral7x7Joints(hm, pt1, pt2, inpH, inpW, resH, resW, all_can=False):
                 ty = pY - f // 2 + y
                 if tx < 0 or tx >= w or ty <= 0 or ty >= h: continue
                 score = hm[ty,tx]
+                if score <= 1e-5: continue
                 sum_score += score
                 sum_x += tx * score
                 sum_y += ty * score
         peak_pp[0,i] = sum_y / sum_score
         peak_pp[1,i] = sum_x / sum_score
-    
+    '''
     peak_tf = torch.zeros([peak_pp.shape[1], peak_pp.shape[0]])
     for i in range(peak_tf.shape[0]):
         peak_tf[i] = transformBoxInvert(torch.from_numpy(peak_pp[::-1,i].copy()), pt1, pt2, inpH, inpW, resH, resW)

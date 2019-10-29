@@ -58,7 +58,6 @@ def bbox_iou(box1, box2):
     b2_area = (b2_x2 - b2_x1 + 1)*(b2_y2 - b2_y1 + 1)
     
     iou = inter_area / (b1_area + b2_area - inter_area)
-    
     return iou
 
 gaussian_kernel = nn.Conv2d(17, 17, kernel_size=4 * 1 + 1,
@@ -80,17 +79,19 @@ def add_candidate_joints(result, hms, pt1, pt2, inpH, inpW, oupH, oupW):
             kps, sco = getIntegral7x7Joints(hms[pick][k], pt1[pick], pt2[pick], inpH, inpW, oupH, oupW)
             min_dst = np.finfo(np.float32).max
             min_idx = 0
+            can_k_kps, can_k_sco = [], []
             for i in range(kps.shape[0]):
                 d = torch.norm(res['keypoints'][k] - kps[i]).item()
                 if min_dst > d:
                     min_dst = d
                     min_idx = i                    
                 if sco[i] > 0.05:
-                    can_kps.append(kps[i])
-                    can_sco.append(sco[i])
+                    can_k_kps.append(kps[i])
+                    can_k_sco.append(sco[i])
             if min_dst > dist:
                 print('bad match kps {} can {}, min_dist {}, dist {}'.format(res['keypoints'][k], kps[min_idx], min_dst, dist))
-            
+            can_kps.append(can_k_kps)
+            can_sco.append(can_k_sco)
         res['can_kps'] = can_kps
         res['can_sco'] = can_sco
 
@@ -126,7 +127,7 @@ def select_best_candidate(gt_json, final_result):
             min_idx = 0
             min_dst = np.finfo(np.float32).max
             for i, gt in enumerate(gt_list):
-                d = compute_pose_dist(pose, gt)
+                d = compute_pose_dist(pose.reshape(-1), gt)
                 if d > 0 and d < min_dst:
                     min_dst = d
                     min_idx = i
@@ -160,7 +161,7 @@ def select_best_candidate(gt_json, final_result):
                         if can_kps[i] is not None:
                             can_joints += [c.numpy() for c in can_kps[i]]
                         if can_kps[mirror_map[i]] is not None:
-                            can_joints += [c.numpy() for c in can_kps[mirror_map[i]]]]
+                            can_joints += [c.numpy() for c in can_kps[mirror_map[i]]]
 
                         lj, l_idx = get_min_joint(np.array(gt_kps[i*3:i*3+2]), can_joints)
                         rj, r_idx = get_min_joint(np.array(gt_kps[mirror_map[i]*3:mirror_map[i]*3+2]), can_joints)
@@ -212,14 +213,13 @@ def select_best_candidate(gt_json, final_result):
         for pose in result['result']:
             all_detected += 1
             kps = pose['keypoints'].numpy()
-            best_match_pose = match_pose(kps.reshape(-1), gt_map[image_id])
+            best_match_pose = match_pose(kps, gt_map[image_id])
             if best_match_pose is not None:
                 refine_pose, change = select_best_candidate(kps, pose['can_kps'], best_match_pose)
                 if change:
                     change_num += 1
                 pose['keypoints'] = torch.from_numpy(refine_pose)
-            else:
-                print('check pose not pass!', best_match_pose)
+
     print('Number of refined pose: {:d}/{:d}'.format(change_num, all_detected))
 
 def prediction(model, img_folder, boxh5, imglist):
