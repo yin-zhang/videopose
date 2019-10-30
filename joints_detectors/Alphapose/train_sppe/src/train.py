@@ -114,7 +114,8 @@ def main():
     if opt.loadModel:
         print('Loading Model from {}'.format(opt.loadModel))
 
-        ckp = torch.load(opt.loadModel)
+        '''
+        ckp = torch.load(opt.loadModel)        
         for name,param in m.state_dict().items():
             if name in ckp:
                 ckp_param = ckp[name]
@@ -125,14 +126,10 @@ def main():
                     print(name, 'shape is inconsistent with checkpoint')
             else:
                 print(name, 'can not be found in checkpoint')
-         
-            if name not in m.conv_out.named_parameters():
-                print('set', name, 'requires_grad False')
-                param.requires_grad = False
-        for param in m.conv_out.parameters():
-            print(param.requires_grad)
-        
-        # m.load_state_dict(torch.load(opt.loadModel))
+        '''
+
+        m.load_state_dict(torch.load(opt.loadModel))
+
         if not os.path.exists("../exp/{}/{}".format(opt.dataset, opt.expID)):
             try:
                 os.mkdir("../exp/{}/{}".format(opt.dataset, opt.expID))
@@ -161,6 +158,18 @@ def main():
             m.parameters(),
             lr=opt.LR
         )
+    elif opt.optMethod = 'rmsprop_refine':
+        optimizer = torch.optim.RMSprop(
+            [
+                {"params": m.preact.parameters(), "lr":1e-5},
+                {"params": m.suffle1.parameters(), "lr":1e-5},
+                {"params": m.duc1.parameters(), "lr":1e-5},
+                {"params": m.duc2.parameters(), "lr":1e-5},
+                {"params": m.conv_out.parameters(), "lr":1e-4}
+            ],
+            lr=opt.LR,
+            momentum=opt.momentum,
+            weight_decay=opt.weightDecay)
     else:
         raise Exception
     if opt.loadOptimizer:

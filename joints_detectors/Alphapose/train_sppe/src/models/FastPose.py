@@ -33,8 +33,8 @@ class FastPose_SE(nn.Module):
         self.conv_out = nn.Conv2d(
             self.conv_dim, opt.nClasses, kernel_size=3, stride=1, padding=1)
         
-        nn.init.kaiming_normal_(self.conv_out.weight)
-        nn.init.constant_(self.conv_out.bias, 0)
+        # nn.init.kaiming_normal_(self.conv_out.weight)
+        # nn.init.constant_(self.conv_out.bias, 0)
 
     def forward(self, x):
         # x.shape (2048, w/32, h/32) --> out.shape (512, w/16, h/16)
@@ -44,5 +44,6 @@ class FastPose_SE(nn.Module):
         out = self.duc2(out)
 
         out = self.conv_out(out)
+        out = out.narrow(1, 0, 17)
         # 128 * h/8 * w/8
         return out
