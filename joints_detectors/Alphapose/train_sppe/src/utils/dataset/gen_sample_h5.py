@@ -95,15 +95,16 @@ def gen_h36m_h5(train_sample_path, val_sample_path, output_path):
             for i in range(num):
                 imgname = ann['images'][i]['file_name']
                 part = np.array(ann['annotations'][i]['keypoints_img'])
-
                 part_vis = ann['annotations'][i]['keypoints_vis']
                 for j in range(len(part)):
                     if not part_vis[j]:
                         part[j] *= -1
                 bndbox = np.array(ann['annotations'][i]['bbox'])
-
+                # remove [4, 5, 9, 10, 11, 16, 20, 21, 22, 23, 24, 28, 29, 30, 31]
+                # left [0, 1,2,3, 6,7,8, 12,13,14,15, 17,18,19, 25,26, 27,]
+                valid_idx = [0, 1,2,3, 6,7,8, 12,13,14,15, 17,18,19, 25,26,27]
                 imgname_list.append(imgname.encode())
-                part_list.append(part)
+                part_list.append(part[valid_idx])
                 bndbox_list.append(bndbox)
     
     imgname_list, part_list, bndbox_list = [], [], []
@@ -157,8 +158,6 @@ def merge_dtbox_gtjoints(box_npz, joint_h5, output_path):
                         out_images.append(j_images[j])
                         out_bndbox.append(b_boxes[i][b])
                         out_part.append(j_joints[j])
-    
-    
     
     for i in images_num_desc:
         imgname = out_images[i]
