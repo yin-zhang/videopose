@@ -29,6 +29,13 @@ class H36M(data.Dataset):
         self.nJoints_coco = 17
         self.nJoints = 17
 
+        '''
+        "0 hips", "1 rightHip", "2 rightKnee", "3 rightFoot"
+        "4 leftHip", "5 leftKnee", "6 leftFoot",
+        "7 spine", "8 thorax", "9 nose", "10 head"
+        "11 leftShoulder", "12 leftElbow", "13 leftWrist",
+        "14 rightShoulder", "15 rightElbow", "16 rightWrist"
+        '''
         self.accIdxs = (1, 2, 3, 4, 5, 6, 7, 8,
                         9, 10, 11, 12, 13, 14, 15, 16, 17)
         self.flipRef = ((2,5), (3,6), (4,7), (12,15),(13,16),(14,17))
