@@ -207,6 +207,26 @@ def shuffleLR_v(x, dataset, cuda=False):
     x = torch.autograd.Variable(x)
     return x
 
+def vis_heatmap(hms, path, c=5, img_res=None, joint_names=None):
+    assert len(hms.shape) == 3, 'Dimension of heatmaps should be 3, keypoints x h x w'
+    n = hms.shape[0] + (0 if img_res is None else 1)
+    r = n // c + (0 if n % c == 0 else 1)
+
+    plt.figure()
+    plt.subplots_adjust(hspace=0.4)
+    for i in range(hms.shape[0]):
+        ax = plt.subplot(r, c, i + 1)
+        ax.set_title('{:d} {}'.format(i, "" if joint_names is None else joint_names[i]), fontsize=10)
+        sns.heatmap(hms[i], cbar=False, cmap='viridis',xticklabels=False,yticklabels=False, ax=ax)
+    
+    if img_res is not None:
+        ax = plt.subplot(r, c, n)
+        ax.set_axis_off()
+        ax.set_title('res', fontsize=10)
+        ax.imshow(img_res)
+
+    plt.savefig(path)
+    plt.close()
 
 def vis_frame(frame, im_res, format='coco'):
     '''

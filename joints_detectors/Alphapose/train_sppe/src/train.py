@@ -10,7 +10,7 @@ from opt import opt
 from tqdm import tqdm
 from models.FastPose import createModel
 from utils.eval import DataLogger, accuracy
-from utils.img import flip_v, shuffleLR_v
+from utils.img import flip_v, shuffleLR_v, save_, vis_heatmap
 from evaluation import prediction
 
 from tensorboardX import SummaryWriter
@@ -77,11 +77,11 @@ def valid(val_loader, m, criterion, optimizer, writer):
 
             loss = criterion(out.mul(setMask), labels)
 
-            flip_out = m(flip_v(inps, cuda=True))
-            flip_out = flip_v(shuffleLR_v(
-                flip_out, val_loader.dataset, cuda=True), cuda=True)
+            # flip_out = m(flip_v(inps, cuda=True))
+            # flip_out = flip_v(shuffleLR_v(
+            #     flip_out, val_loader.dataset, cuda=True), cuda=True)
 
-            out = (flip_out + out) / 2
+            # out = (flip_out + out) / 2
 
         acc = accuracy(out.mul(setMask), labels, val_loader.dataset)
 
@@ -106,6 +106,16 @@ def valid(val_loader, m, criterion, optimizer, writer):
 
     return lossLogger.avg, accLogger.avg
 
+def show_loader_image(output_dir, loader, count = 10, joint_names=None):
+    for i, (inps, labels, setMask, imgset) in enumerate(val_loader_desc):
+        if i > 10:
+            break
+
+        hms = labels.mul(setMask)
+        for j in range(inps.shape[0]):
+            path = os.path.join(output_dir, '{:d}_{:d}.jpg'.format(i, j))
+            vis_heatmap(hms.numpy(), path, c=5, img_res=inps[j].numpy(), joint_names=None):
+            
 
 def main():
     print(opt)
@@ -191,6 +201,11 @@ def main():
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=opt.validBatch, shuffle=False, num_workers=opt.nThreads, pin_memory=True)
+
+    show_loader_image('train_check_images', train_loader, joint_names=train_dataset.joint_names)
+    show_loader_image('valid_check_images', val_loader, joint_names=val_dataset.joint_names)
+    
+    return
 
     # Model Transfer
     m = torch.nn.DataParallel(m).cuda()
