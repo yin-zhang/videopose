@@ -5,6 +5,7 @@
 
 import torch
 import torch.utils.data
+from torch.utils.data.sampler import RandomSampler
 from utils.dataset import coco, h36m
 from opt import opt
 from tqdm import tqdm
@@ -199,10 +200,10 @@ def main():
         val_dataset = h36m.H36M(train=False)
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=opt.trainBatch, shuffle=True, num_workers=opt.nThreads, pin_memory=True)
+        train_dataset, batch_size=opt.trainBatch, shuffle=False, sampler=RandomSampler(train_dataset, replacement=True, num_samples=len(train_dataset)//10), num_workers=opt.nThreads, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=opt.validBatch, shuffle=False, num_workers=opt.nThreads, pin_memory=True)
+        val_dataset, batch_size=opt.validBatch, shuffle=False, sampler=RandomSampler(val_dataset, replacement=True, num_samples=len(val_dataset)//10), num_workers=opt.nThreads, pin_memory=True)
 
     #show_loader_image('train_check_images', train_loader, joint_names=train_dataset.joint_names)
     #show_loader_image('valid_check_images', val_loader, joint_names=val_dataset.joint_names)

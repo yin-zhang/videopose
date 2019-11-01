@@ -49,18 +49,18 @@ class H36M(data.Dataset):
         # create train/val split
         with h5py.File('../data/h36m/annot_h36m.h5', 'r') as annot:
             # train
-            self.imgname_coco_train = annot['imgname'][:1000983]
-            self.bndbox_coco_train = annot['bndbox'][:1000983]
-            self.part_coco_train = annot['part'][:1000983]
+            self.imgname_coco_train = annot['imgname'][1000983:]
+            self.bndbox_coco_train = annot['bndbox'][1000983:]
+            self.part_coco_train = annot['part'][1000983:]
             # val
-            '''
+            
             self.imgname_coco_val = annot['imgname'][1000983:]
             self.bndbox_coco_val = annot['bndbox'][1000983:]
             self.part_coco_val = annot['part'][1000983:]
-            '''
-            self.imgname_coco_val = annot['imgname'][:10000]
-            self.bndbox_coco_val = annot['bndbox'][:10000]                                                                                               
-            self.part_coco_val = annot['part'][:10000]
+            
+            #self.imgname_coco_val = annot['imgname'][1000983:1010000]
+            #self.bndbox_coco_val = annot['bndbox'][1000983:1010000]                                                                     
+            #self.part_coco_val = annot['part'][1000983:1010000]
 
         self.size_train = self.imgname_coco_train.shape[0]
         self.size_val = self.imgname_coco_val.shape[0]
