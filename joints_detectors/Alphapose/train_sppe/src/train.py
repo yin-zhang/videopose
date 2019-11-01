@@ -10,9 +10,8 @@ from opt import opt
 from tqdm import tqdm
 from models.FastPose import createModel
 from utils.eval import DataLogger, accuracy
-from utils.img import flip_v, shuffleLR_v, save_, vis_heatmap
+from utils.img import flip_v, shuffleLR_v, vis_heatmap, torch_to_im
 from evaluation import prediction
-
 from tensorboardX import SummaryWriter
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]='2,3,4,5,6,7'
@@ -77,11 +76,11 @@ def valid(val_loader, m, criterion, optimizer, writer):
 
             loss = criterion(out.mul(setMask), labels)
 
-            # flip_out = m(flip_v(inps, cuda=True))
-            # flip_out = flip_v(shuffleLR_v(
-            #     flip_out, val_loader.dataset, cuda=True), cuda=True)
+            #flip_out = m(flip_v(inps, cuda=True))
+            #flip_out = flip_v(shuffleLR_v(
+            #    flip_out, val_loader.dataset, cuda=True), cuda=True)
 
-            # out = (flip_out + out) / 2
+            #out = (flip_out + out) / 2
 
         acc = accuracy(out.mul(setMask), labels, val_loader.dataset)
 
@@ -107,19 +106,21 @@ def valid(val_loader, m, criterion, optimizer, writer):
     return lossLogger.avg, accLogger.avg
 
 def show_loader_image(output_dir, loader, count = 10, joint_names=None):
-    for i, (inps, labels, setMask, imgset) in enumerate(val_loader_desc):
+    for i, (inps, labels, setMask, imgset) in enumerate(loader):
         if i > 10:
             break
-
+            
         hms = labels.mul(setMask)
         for j in range(inps.shape[0]):
+            print('save', i, j)
             path = os.path.join(output_dir, '{:d}_{:d}.jpg'.format(i, j))
-            vis_heatmap(hms.numpy(), path, c=5, img_res=inps[j].numpy(), joint_names=None):
+            vis_heatmap(hms[j].numpy(), path, c=5, img_res=torch_to_im(inps[j]), joint_names=None)
             
 
 def main():
     print(opt)
     # Model Initialize
+    
     m = createModel().cuda()
     if opt.loadModel:
         print('Loading Model from {}'.format(opt.loadModel))
@@ -168,7 +169,8 @@ def main():
             m.parameters(),
             lr=opt.LR
         )
-    elif opt.optMethod = 'rmsprop_refine':
+    elif opt.optMethod == 'rmsprop_refine':
+        print('opt rmsprop refine')
         optimizer = torch.optim.RMSprop(
             [
                 {"params": m.preact.parameters(), "lr":1e-5},
@@ -187,7 +189,7 @@ def main():
         
     writer = SummaryWriter(
         '.tensorboard/{}/{}'.format(opt.dataset, opt.expID))
-
+    
     # Prepare Dataset
     if opt.dataset == 'coco':
         train_dataset = coco.Mscoco(train=True)
@@ -202,10 +204,9 @@ def main():
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=opt.validBatch, shuffle=False, num_workers=opt.nThreads, pin_memory=True)
 
-    show_loader_image('train_check_images', train_loader, joint_names=train_dataset.joint_names)
-    show_loader_image('valid_check_images', val_loader, joint_names=val_dataset.joint_names)
-    
-    return
+    #show_loader_image('train_check_images', train_loader, joint_names=train_dataset.joint_names)
+    #show_loader_image('valid_check_images', val_loader, joint_names=val_dataset.joint_names)
+    #return
 
     # Model Transfer
     m = torch.nn.DataParallel(m).cuda()

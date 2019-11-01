@@ -15,10 +15,10 @@ def rnd(x):
     return max(-2 * x, min(2 * x, np.random.randn(1)[0] * x))
 
 
-def generateSampleBox(img_path, bndbox, part, nJoints, imgset, scale_factor, dataset, train=True, nJoints_coco=17):
+def generateSampleBox(img_path, bndbox, part, nJoints, imgset, scale_factor, dataset, train=True, nJoints_coco=17, random_color=True):
 
     img = load_image(img_path)
-    if train:
+    if train and random_color:
         img[0].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
         img[1].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
         img[2].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
