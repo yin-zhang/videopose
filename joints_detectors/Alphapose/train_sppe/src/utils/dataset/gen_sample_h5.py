@@ -7,6 +7,7 @@ import argparse
 from tqdm import tqdm
 import copy
 import glob
+import cv2
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -176,33 +177,84 @@ def rearrange_h5(h5_path, output_path):
     bndbox_list = f['bndbox'][:]
     f.close()
 
+    hm = {}
     image_num = len(img_list)
-    start, end = 0, image_num-1
-    last_training_idx = start
-    while start < end:
-        if img_list[start].decode().split('_')[1] not in h36m_training:
-            while end > start and img_list[end].decode().split('_')[1] not in h36m_training:
-                end -= 1
-            if end > start:
-                img_list[start], img_list[end] = img_list[end], img_list[start]
-                part_list[start], part_list[end] = part_list[end], part_list[start]
-                bndbox_list[start], bndbox_list[end] = bndbox_list[end], bndbox_list[start]
-                end -= 1
-                last_training_idx = start                
-                start += 1
-        else:
-            last_training_idx = start
-            start += 1
 
     for i in range(image_num):
-        assert (i <= last_training_idx and img_list[i].decode().split('_')[1] in h36m_training) or (i > last_training_idx and img_list[i].decode().split('_')[1] in h36m_validation)
+        subj = img_list[i].decode().split('_')[1]
+        if subj not in hm:
+            hm[subj] = {'imgname':[], 'part':[], 'bndbox':[]}
+        hm[subj]['imgname'].append(img_list[i])
+        hm[subj]['part'].append(part_list[i])
+        hm[subj]['bndbox'].append(bndbox_list[i])
 
-    print('start of validation:', last_training_idx + 1)
+    w_img_list = []
+    w_part_list = []
+    w_bndbox_list = []
+    for subj in h36m_training:
+        w_img_list += hm[subj]['imgname']
+        w_part_list += hm[subj]['part']
+        w_bndbox_list += hm[subj]['bndbox']
+    
+    print('start of validation:', len(w_img_list))
+
+    for subj in h36m_validation:
+        w_img_list += hm[subj]['imgname']
+        w_part_list += hm[subj]['part']
+        w_bndbox_list += hm[subj]['bndbox']
+
     f = h5py.File(output_path, 'w')
-    f['imgname'] = img_list
-    f['part'] = part_list
-    f['bndbox'] = bndbox_list
+    f['imgname'] = w_img_list
+    f['part'] = w_part_list
+    f['bndbox'] = w_bndbox_list
     f.close()
+
+def check_h5(h5_path):
+    f = h5py.File(h5_path, 'r')
+    img_list = f['imgname'][:]
+    part_list = f['part'][:]
+    bndbox_list = f['bndbox'][:]
+    f.close()
+
+    hm = {}
+    image_num = len(img_list)
+
+    for i in range(image_num):
+        subj = img_list[i].decode().split('_')[1]
+        if subj not in hm:
+            hm[subj] = {'imgname':[], 'part':[], 'bndbox':[]}
+        hm[subj]['imgname'].append(img_list[i])
+        hm[subj]['part'].append(part_list[i])
+        hm[subj]['bndbox'].append(bndbox_list[i])
+    
+    def draw_pose(path, kps, box):
+        
+        img = cv2.imread(os.path.join('/Volumes/Dog/Data/pose/h36m_images_unzip/images', path.decode()))
+        for i in range(kps.shape[0]):
+            x = int(kps[i][0])
+            y = int(kps[i][1])
+            cv2.circle(img, (x, y), 3, (0,0,255), -1)
+        
+        cv2.rectangle(img, (int(box[0]), int(box[1])),(int(box[2]), int(box[3])),(55,255,155), 3)
+        return img
+        # w = box[2] - box[0] + 1
+        # h = box[3] - box[1] + 1
+        # x0, y0 = int(box[0]), int(box[1])
+        # x1, y1 = x0, int(box[1]+h)
+        # x2, y2 = int(box[0]+w), y1
+        # x3, y3 = x2, y0
+        # cv2.line(img, (x0, y0), (x1, y1), )
+
+    for k,h in hm.items():
+        n = len(h['imgname'])
+        print(k, n)
+        for i in np.random.randint(n, size=20):
+            name = h['imgname'][i]
+            part = h['part'][i]
+            box  = h['bndbox'][i]
+            img = draw_pose(name, part, box)
+            cv2.imshow('pose', img)
+            cv2.waitKey()
 
 def merge_dtboxes(box_path, end_index, output_path):
     images, boxes = [], []
@@ -226,7 +278,7 @@ def parse_args():
     parser.add_argument('-i', '--input', type=str, help='input file path')
     parser.add_argument('--detect-box-path', type=str, help='bounding box npz file outputed by gen_train_bbox.py')
     parser.add_argument('--gt-joint-path', type=str, help='joints groundtruth file path')
-    parser.add_argument('-m', '--mode', type=str, help='mode, h36m2h5|merge_box_gt|box2eval|merge_boxes|rearrange_h5')
+    parser.add_argument('-m', '--mode', type=str, help='mode, h36m2h5|merge_box_gt|box2eval|merge_boxes|rearrange_h5|check_pose')
     parser.add_argument('-d', '--dir', type=str, help='data directory')
     return parser.parse_args()
 
@@ -268,6 +320,8 @@ if __name__ == '__main__':
         rearrange_h5(args.input, args.output)
     elif args.mode == 'cvt_coco':
         cvt_output2coco(args.dir, args.input, args.output)
+    elif args.mode == 'check_pose':
+        check_h5(args.input)
 
 
     
