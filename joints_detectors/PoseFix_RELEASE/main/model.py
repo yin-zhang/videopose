@@ -13,7 +13,7 @@ resnet_arg_scope = partial(resnet_arg_scope, bn_trainable=cfg.bn_train)
 
 class Model(ModelDesc):
     
-    def head_net(self, blocks, is_training, trainable=True):
+    def head_net(self, blocks, is_training, trainable=True, add_paf_output=False):
         
         normal_initializer = tf.truncated_normal_initializer(0, 0.01)
         msra_initializer = tf.contrib.layers.variance_scaling_initializer()
@@ -34,13 +34,26 @@ class Model(ModelDesc):
                 padding='SAME', activation_fn=tf.nn.relu,
                 scope='up3')
 
-            out = slim.conv2d(out, cfg.num_kps, [1, 1],
+            if add_paf_output:
+                hms_out = slim.conv2d(out, cfg.num_kps, [1, 1],
                     trainable=trainable, weights_initializer=msra_initializer,
                     padding='SAME', normalizer_fn=None, activation_fn=None,
                     scope='out')
-
+                paf_out = slim.conv2d(out, cfg.num_paf*2, [1, 1],
+                    trainable=trainable, weights_initializer=msra_initializer,
+                    padding='SAME', normalizer_fn=None, activation_fn=None,
+                    scope='paf')
+                
+                out = (hms_out, paf_out)
+            else:
+                out = slim.conv2d(out, cfg.num_kps, [1, 1],
+                    trainable=trainable, weights_initializer=msra_initializer,
+                    padding='SAME', normalizer_fn=None, activation_fn=None,
+                    scope='out')
         return out
 
+    # def extract_coordinate_paf(self, heatmap_outs, paf_outs):
+        
     def extract_coordinate(self, heatmap_outs):
         shape = heatmap_outs.get_shape().as_list()
         batch_size = tf.shape(heatmap_outs)[0]
@@ -134,14 +147,20 @@ class Model(ModelDesc):
 
         return heatmap * 255.
    
-    def make_network(self, is_train):
+    def make_network(self, is_train, add_paf_loss=False):
         if is_train:
             image = tf.placeholder(tf.float32, shape=[cfg.batch_size, *cfg.input_shape, 3])
             target_coord = tf.placeholder(tf.float32, shape=[cfg.batch_size, cfg.num_kps, 2])
             input_pose_coord = tf.placeholder(tf.float32, shape=[cfg.batch_size, cfg.num_kps, 2])
             target_valid = tf.placeholder(tf.float32, shape=[cfg.batch_size, cfg.num_kps])
             input_pose_valid = tf.placeholder(tf.float32, shape=[cfg.batch_size, cfg.num_kps])
-            self.set_inputs(image, target_coord, input_pose_coord, target_valid, input_pose_valid)
+            
+            if add_paf_loss:
+                target_paf_valid = tf.placeholder(tf.float32, shape=[cfg.batch_size, len(cfg.kps_lines)*2])
+                target_paf = tf.placeholder(tf.float32, shape=[cfg.batch_size, len(cfg.kps_lines)*2, cfg.output_shape[0], cfg.output_shape[1]])
+                self.set_inputs(image, target_coord, input_pose_coord, target_valid, input_pose_valid, target_paf, target_paf_valid)
+            else:
+                self.set_inputs(image, target_coord, input_pose_coord, target_valid, input_pose_valid)
         else:
             image = tf.placeholder(tf.float32, shape=[None, *cfg.input_shape, 3])
             input_pose_coord = tf.placeholder(tf.float32, shape=[None, cfg.num_kps, 2])
@@ -151,7 +170,10 @@ class Model(ModelDesc):
         input_pose_hm = tf.stop_gradient(self.render_gaussian_heatmap(input_pose_coord, cfg.input_shape, cfg.input_sigma, input_pose_valid))
         backbone = eval(cfg.backbone)
         resnet_fms = backbone([image, input_pose_hm], is_train, bn_trainable=True)
-        heatmap_outs = self.head_net(resnet_fms, is_train)
+        if add_paf_loss:
+            heatmap_outs, paf_outs = self.head_net(resnet_fms, is_train, add_paf_output=add_paf_loss)
+        else:
+            heatmap_outs = self.head_net(resnet_fms, is_train)
         
         if is_train:
             
@@ -166,22 +188,25 @@ class Model(ModelDesc):
             valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps])
             loss_heatmap = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=gt, logits=out) * valid_mask)
 
+            if add_paf_loss:
+                loss_paf = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=target_paf, logits=paf_outs) * target_paf_valid)
+            else:
+                loss_paf = 0
+
             # coordinate loss
             out = self.extract_coordinate(heatmap_outs) / cfg.input_shape[0] * cfg.output_shape[0]
             gt = gt_coord
             valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps, 1])
             loss_coord = tf.reduce_mean(tf.abs(out - gt) * valid_mask)
 
-            loss = loss_heatmap + loss_coord
+            loss = loss_heatmap + loss_coord + loss_paf
 
             self.add_tower_summary('loss_h', loss_heatmap)
             self.add_tower_summary('loss_c', loss_coord)
+            self.add_tower_summary('loss_p', loss_paf)
 
             self.set_loss(loss)
             
         else:
             out = self.extract_coordinate(heatmap_outs)
             self.set_outputs(out)
-
-
-

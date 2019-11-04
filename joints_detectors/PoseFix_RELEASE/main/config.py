@@ -56,6 +56,7 @@ class Config:
     num_gpus = 1
     continue_train = False
     display = 1
+    add_paf = True
     
     ## helper functions
     def get_lr(self, epoch):

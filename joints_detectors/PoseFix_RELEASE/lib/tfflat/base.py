@@ -342,7 +342,6 @@ class Trainer(Base):
         # flatten data_gt
         train_data = [y for x in data_gt for y in x]
 
-
         from tfflat.data_provider import DataFromList, MultiProcessMapDataZMQ, BatchData, MapData
         data_load_thread = DataFromList(train_data)
         if self.cfg.multi_thread_enable:
@@ -379,7 +378,7 @@ class Trainer(Base):
                                                 weights_initializer=weights_initializer,
                                                 biases_initializer=biases_initializer):
                                 # loss over single GPU
-                                self.net.make_network(is_train=True)
+                                self.net.make_network(is_train=True, add_paf_loss=self.add_paf)
                                 if i == self.cfg.num_gpus - 1:
                                     loss = self.net.get_loss(include_wd=True)
                                 else:
@@ -524,7 +523,7 @@ class Tester(Base):
                 with tf.device('/gpu:%d' % i):
                     with tf.name_scope('tower_%d' % i) as name_scope:
                         with slim.arg_scope([slim.model_variable, slim.variable], device='/device:CPU:0'):
-                            self.net.make_network(is_train=False)
+                            self.net.make_network(is_train=False, add_paf_loss=cfg.add_paf)
                             self._input_list.append(self.net.get_inputs())
                             self._output_list.append(self.net.get_outputs())
 

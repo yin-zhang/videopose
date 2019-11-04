@@ -334,7 +334,42 @@ def synthesize_pose(joints, estimated_joints, near_joints, area, num_overlap):
 
     return synth_joints
 
-def generate_batch(d, stage='train'):
+def generate_paf_pair(jA, jB, output_shape, threshold=1, valid=True):
+    w, h = output_shape
+    m = np.zeros((h, w, 2), dtype=np.float32)
+    if not valid: return m
+    
+    directAB = jB - jA
+    distAB = np.linalg.norm(directAB)
+    directAB = directAB / distAB
+
+    minX = min(jA[0], jB[0]) - threshold
+    maxX = max(jA[0], jB[0]) + threshold
+    minY = min(jA[1], jB[1]) - threshold
+    maxY = max(jA[1], jB[1]) + threshold
+
+    for x in range(minX, maxX):
+        dx = x - jA[0]
+        for y in range(minY, maxY):
+            dy = y - jA[1]
+            d = abs(dx * directAB[1] - dy * directAB[0])
+            if d <= threshold:
+                m[y,x] = directAB
+
+    return m
+
+def render_paf(coords, coords_valid, lines, output_shape):
+    paf_list = []
+    for ja,jb in lines:
+        kp_ja = coords[ja]
+        kp_jb = coords[jb]
+
+        valid = coords_valid[ja] > 0 and coords_valid[jb] > 0
+        paf = generate_paf_pair(kp_ja, kp_jb, output_shape, valid=valid)
+        paf_list.append(paf)
+    return paf_list
+
+def generate_batch(d, stage='train', add_paf=False):
     
     img = cv2.imread(os.path.join(cfg.img_path, d['imgpath']), cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
     if img is None:
@@ -399,7 +434,7 @@ def generate_batch(d, stage='train'):
         target_valid = joints[:,2]
         input_pose_coord = synth_joints[:,:2]
         input_pose_valid = synth_joints[:,2]
-        
+
         # for debug
         vis = False
         if vis:
@@ -422,11 +457,20 @@ def generate_batch(d, stage='train'):
             tmpimg = cfg.vis_keypoints(tmpimg, tmpkps)
             cv2.imwrite(osp.join(cfg.vis_dir, filename + '_input_pose.jpg'), tmpimg)
        
-        return [cropped_img,
-                target_coord, 
-                input_pose_coord,
-                (target_valid > 0),
-                (input_pose_valid > 0)]
+        if add_paf:
+            paf = render_paf(target_coord, target_valid, cfg.kps_lines, cfg.output_shape)
+            return [cropped_img,
+                    target_coord, 
+                    input_pose_coord,
+                    (target_valid > 0),
+                    (input_pose_valid > 0),
+                    paf]
+        else:
+            return [cropped_img,
+                    target_coord, 
+                    input_pose_coord,
+                    (target_valid > 0),
+                    (input_pose_valid > 0)]
 
     else:
         trans = get_affine_transform(center, scale, rotation, (cfg.input_shape[1], cfg.input_shape[0]))
