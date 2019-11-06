@@ -532,13 +532,13 @@ class Tester(Base):
                 with tf.device('/gpu:%d' % i):
                     with tf.name_scope('tower_%d' % i) as name_scope:
                         with slim.arg_scope([slim.model_variable, slim.variable], device='/device:CPU:0'):
-                            self.net.make_network(is_train=False, add_paf_loss=cfg.add_paf)
+                            self.net.make_network(is_train=False, add_paf_loss=self.cfg.add_paf)
                             self._input_list.append(self.net.get_inputs())
                             self._output_list.append(self.net.get_outputs())
 
                         tf.get_variable_scope().reuse_variables()
 
-        self._outputs = aggregate_batch(self._output_list)
+        self._outputs = [aggregate_batch(self._output_list)]
         self._outputs.append(self.net.get_heatmaps())
         # run_meta = tf.RunMetadata()
         # opts = tf.profiler.ProfileOptionBuilder.float_operation()

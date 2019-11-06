@@ -39,7 +39,7 @@ class Model(ModelDesc):
                     trainable=trainable, weights_initializer=msra_initializer,
                     padding='SAME', normalizer_fn=None, activation_fn=None,
                     scope='out')
-                paf_out = slim.conv2d(out, cfg.num_paf*2, [1, 1],
+                paf_out = slim.conv2d(out, len(cfg.kps_lines)*2, [1, 1],
                     trainable=trainable, weights_initializer=msra_initializer,
                     padding='SAME', normalizer_fn=None, activation_fn=None,
                     scope='paf')
@@ -358,3 +358,4 @@ class Model(ModelDesc):
         else:
             out = self.extract_coordinate(heatmap_outs)
             self.set_outputs(out)
+            self.set_heatmaps(heatmap_outs)

@@ -45,7 +45,7 @@ class Config:
     rotation_factor = 40
 
     ## testing config
-    flip_test = True
+    flip_test = False
     oks_nms_thr = 0.9
     test_batch_size = 32
 

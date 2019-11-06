@@ -31,8 +31,8 @@ class Dataset(object):
 
 
     test_on_trainset_path = osp.join('..', 'data', dataset_name, 'input_pose', 'test_on_trainset', 'result.json')
-    input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'person_keypoints_test-dev2017_Simple152_results.json') # set directory of the input pose
-    # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'douyin_0_pose.json') # set directory of the input pose
+    # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'person_keypoints_test-dev2017_Simple152_results.json') # set directory of the input pose
+    input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'douyin_0_pose.json') # set directory of the input pose
     img_path = osp.join('..', 'data', dataset_name, 'images')
     train_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'person_keypoints_train2017.json')
     val_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'person_keypoints_val2017.json')
