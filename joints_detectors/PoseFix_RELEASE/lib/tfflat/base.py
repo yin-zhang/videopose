@@ -564,13 +564,14 @@ class Tester(Base):
         self.gpu_timer.tic()
         res = self.sess.run([*self.graph_ops, *self.summary_dict.values()], feed_dict=feed_dict)
         self.gpu_timer.toc()
+        res_heatmaps = []
 
         if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:
             for i in range(len(res)):
-                print(i, len(res[i]))
                 res[i] = res[i][:len(data[0])]
+                res_heatmaps.append(res[i][-len(data[0]):])
 
-        return res
+        return res, res_heatmaps
 
     def test(self):
         pass

@@ -22,9 +22,34 @@ from model import Model
 from gen_batch import generate_batch
 from dataset import Dataset
 from nms.nms import oks_nms
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def save_mergedHeatmaps(hms, path, c=5, img_res=None):
+    assert len(hms.shape) == 3, 'Dimension of heatmaps should be 3, keypoints x h x w'
+    n = hms.shape[0] + (0 if img_res is None else 1)
+    r = n // c + (0 if n % c == 0 else 1)
+
+    joint_names = ['Nose', 'LEye', 'REye', 'LEar', 'REar', 'LShoulder', 'RShoulder', 'LElbow', 'RElbow', 'LWrist', 'RWrist', 'LHip', 'RHip', 'LKnee', 'Rknee', 'LAnkle', 'RAnkle']
+
+    plt.figure()
+    plt.subplots_adjust(hspace=0.4)
+    for i in range(hms.shape[0]):
+        ax = plt.subplot(r, c, i + 1)
+        ax.set_title('{:d} {}'.format(i, joint_names[i]), fontsize=10)
+        sns.heatmap(hms[i], cbar=False, cmap='viridis',xticklabels=False,yticklabels=False, ax=ax)
+    
+    if img_res is not None:
+        ax = plt.subplot(r, c, n)
+        ax.set_axis_off()
+        ax.set_title('res', fontsize=10)
+        ax.imshow(img_res)
+
+    plt.savefig(path)
+    plt.close()
 
 def test_net(tester, input_pose, det_range, gpu_id):
-
+    tf.logging.info('test net ------------------------------------')
     dump_results = []
 
     start_time = time.time()
@@ -35,6 +60,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
     pbar = tqdm(total=det_range[1] - img_start - 1, position=gpu_id)
     pbar.set_description("GPU %s" % str(gpu_id))
     while img_start < det_range[1]:
+        print(img_start, '-----------------------')
         img_end = img_start + 1
         im_info = input_pose[img_start]
         while img_end < det_range[1] and input_pose[img_end]['image_id'] == im_info['image_id']:
@@ -74,8 +100,8 @@ def test_net(tester, input_pose, det_range, gpu_id):
             crop_infos = np.array(crop_infos)
             
             # forward
-            coord = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
-            
+            coord,heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
+            heatmaps=heatmaps[0]
             if cfg.flip_test:
                 flip_imgs = imgs[:, :, ::-1, :]
                 flip_input_pose_coords = input_pose_coords.copy()
@@ -115,6 +141,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
                     _tmpimg = tmpimg.copy()
                     _tmpimg = cfg.vis_keypoints(_tmpimg, tmpkps)
                     cv2.imwrite(osp.join(cfg.vis_dir, str(img_id) + '_output.jpg'), _tmpimg)
+                    save_mergedHeatmaps(heatmaps[image_id-start_id], osp.join(cfg.vis_dir, str(img_id) + '_hm.jpg'))
                     img_id += 1
 
                 # map back to original images
@@ -202,9 +229,9 @@ def test(test_model):
         range = [ranges[gpu_id], ranges[gpu_id + 1]]
         return test_net(tester, input_pose, range, gpu_id)
         
-    # func(0)
-    MultiGPUFunc = MultiProc(len(args.gpu_ids.split(',')), func)
-    result = MultiGPUFunc.work()
+    func(0)
+    #MultiGPUFunc = MultiProc(len(args.gpu_ids.split(',')), func)
+    #result = MultiGPUFunc.work()
 
     # evaluation
     # d.evaluation(result, annot, cfg.result_dir, cfg.testset)

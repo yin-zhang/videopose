@@ -358,4 +358,4 @@ class Model(ModelDesc):
         else:
             out = self.extract_coordinate(heatmap_outs)
             self.set_outputs(out)
-            self.set_heatmaps(heatmap_outs)
+            self.set_heatmaps(tf.transpose(heatmap_outs, [0, 3, 1, 2]))
