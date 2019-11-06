@@ -52,8 +52,156 @@ class Model(ModelDesc):
                     scope='out')
         return out
 
-    # def extract_coordinate_paf(self, heatmap_outs, paf_outs):
+    def find_peaks(hm, threshold=0.05):
+        w, h = hm.shape[1], hm.shape[0]
+        peak = (hm > threshold)[1:-1,1:-1]
+        peak = peak & (hm[1:-1,1:-1] > hm[:-2,  1:-1])
+        peak = peak & (hm[1:-1,1:-1] > hm[:-2,  :-2])
+        peak = peak & (hm[1:-1,1:-1] > hm[1:-1:,:-2])
+        peak = peak & (hm[1:-1,1:-1] > hm[2:,   :-2]) 
+        peak = peak & (hm[1:-1,1:-1] > hm[2:,   1:-1])
+        peak = peak & (hm[1:-1,1:-1] > hm[2:,   2:])
+        peak = peak & (hm[1:-1,1:-1] > hm[1:-1, 2:])
+        peak = peak & (hm[1:-1,1:-1] > hm[:-2,  2:])
+        peak = np.pad(peak, ((1,1),(1,1)), mode='constant', constant_values=False)
+
+        peak_val = hm[peak]
+        peak_idx = np.array(peak.nonzero()).astype(np.float32)
         
+        # average 7x7 around peak as final peak
+        for i in range(peak_idx.shape[1]):
+            pY, pX = int(peak_idx[0,i]), int(peak_idx[1,i])
+            f = 7
+            sum_score, sum_x, sum_y = 0, 0, 0
+            for x in range(f):
+                for y in range(f):
+                    tx = pX - f // 2 + x
+                    ty = pY - f // 2 + y
+                    if tx < 0 or tx >= w or ty <= 0 or ty >= h: continue
+                    score = hm[ty,tx]
+                    sum_score += score
+                    sum_x += tx * score
+                    sum_y += ty * score
+            peak_idx[0,i] = sum_y / sum_score
+            peak_idx[1,i] = sum_x / sum_score
+
+        
+        return peak_idx[::-1,:].T, peak_val
+
+    def extract_coordinate_paf(self, heatmap_outs, paf_outs):
+        can_idx_list, can_val_list = [], []
+        for i in range(len(heatmap_outs)):
+            peak_idx, peak_val = self.find_peaks(heatmap_outs[i])
+            can_idx_list.append(peak_idx)
+            can_val_list.append(peak_val)
+
+        height = heatmap_outs[0].shape[0]
+        subset_size = len(heatmap_outs) + 2
+        subset = []
+        for line_idx in range(len(cfg.kps_lines)):
+            indexA, indexB = cfg.kps_lines[line_idx]
+            candA = can_idx_list[indexA]
+            candB = can_idx_list[indexB]
+            nA = candA.shape[0]
+            nB = candB.shape[0]
+
+            if nA == 0 or nB == 0:
+                if nA == 0:
+                    for i in range(nB):
+                        num = False
+                        for j in range(len(subset)):
+                            if subset[j][indexB] == i:
+                                num = True
+                                break
+                        if not num:
+                            subset.append([-1]*subset_size)
+                            subset[-1][indexB] = i
+                            subset[-1][-1] = 1
+                            subset[-1][-2] = can_val_list[indexB][i]
+                else:
+                    for i in range(nA):
+                        num = False
+                        for j in range(len(subset)):
+                            if subset[j][indexA] == i:
+                                num = True
+                                break
+                        if not num:
+                            subset.append([-1]*subset_size)
+                            subset[-1][indexA] = i
+                            subset[-1][-1] = 1
+                            subset[-1][-2] = can_val_list[indexA][i]
+            else:
+                paf = paf_outs[line_idx*2:line_idx*2+2]
+                for i in range(nA):
+                    for j in range(nB):
+                        vec = candB[j] - candA[i] 
+                        vecNorm = np.linalg.norm(vec)
+                        vec = vec / vecNorm
+
+                        num_inter = 10
+                        p_sum = 0
+                        p_count = 0
+                        mX = np.round(np.linspace(candA[i][0], candB[j][0], num_inter)).astype(np.int32)
+                        mY = np.round(np.linspace(candB[i][1], candB[j][1], num_inter)).astype(np.int32)
+
+                        for lm in range(num_inter):
+                            direct = paf[:, mY, mX]
+                            score = vec[0] * direct[1] + vec[1] * direct[0]
+                            if score > 0.05:
+                                p_sum += score
+                                p_count += 1
+
+                        suc_ratio = p_count / num_inter
+                        mid_score = p_sum / p_count + min(height_n/vecNorm-1, 0)
+
+                        if mid_score > 0 and suc_ratio > 0.8:
+                            score = mid_score
+                            temp.append((i, j, score))
+                        
+                if len(temp) > 0:
+                    temp = np.array(temp, dtype=[('x',int), ('y',int), ('score', float)])
+                    temp = np.sort(temp, dtype='score')[::-1]
+
+                connectionK = []
+                occurA = [0] * nA
+                occurB = [0] * nB
+                counter = 0
+                for row in range(len(temp)):
+                    x,y,score = temp[row]
+                    
+                    if occurA[x] == 0 and occurB[y] == 0:
+                        connectionK.append((x, y, score))
+                        counter += 1
+                        if counter == min(nA, nB):
+                            break
+                        occurA[x] = 1
+                        occurB[y] = 1
+
+                def gen_data(i):
+                    hm_score_indexA = can_val_list[indexA][connectionK[i][0]]
+                    hm_score_indexB = can_val_list[indexB][connectionK[i][1]]
+                    data = [-1] * subset_size
+                    data[indexA] = connectionK[i][0]
+                    data[indexB] = connectionK[i][1]
+                    data[-1] = 2
+                    data[-2] = connectionK[i][2] + hm_score_indexA + hm_score_indexB
+                
+                if line_idx == 0:
+                    for i in range(len(connectionK)):
+                        subset.append(gen_data(i))
+                else:
+                    for i in range(len(connectionK)):
+                        num = 0
+                        for j in range(len(subset)):
+                            if subset[j][indexA] == connectionK[i][0]:
+                                num += 1
+                                hm_score_indexB = can_val_list[indexB][connectionK[i][1]]
+                                subset[j][indexB] = connectionK[i][1]
+                                subset[j][-1] = subset[j][-1] + 1
+                                subset[j][-2] = subset[j][-2] + hm_score_indexB + connectionK[i][2]
+                        if num == 0:
+                            subset.append(gen_data(i))
+
     def extract_coordinate(self, heatmap_outs):
         shape = heatmap_outs.get_shape().as_list()
         batch_size = tf.shape(heatmap_outs)[0]

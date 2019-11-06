@@ -116,7 +116,7 @@ def synthesize_pose(joints, estimated_joints, near_joints, area, num_overlap):
             coord_list.append(np.empty([0,2]))
 
         tot_coord_list = np.concatenate(coord_list)
-         
+        
         assert len(coord_list) == 4
 
         # jitter error

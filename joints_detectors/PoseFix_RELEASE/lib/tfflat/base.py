@@ -23,12 +23,16 @@ class ModelDesc(object):
         self._inputs = []
         self._outputs = []
         self._tower_summary = []
+        self._heatmaps = []
 
     def set_inputs(self, *vars):
         self._inputs = vars
 
     def set_outputs(self, *vars):
         self._outputs = vars
+
+    def set_heatmaps(self, *vars):
+        self._heatmaps = vars
 
     def set_loss(self, var):
         if not isinstance(var, tf.Tensor):
@@ -56,6 +60,11 @@ class ModelDesc(object):
         if len(self._outputs) == 0:
             raise ValueError("Network doesn't define the outputs")
         return self._outputs
+
+    def get_heatmaps(self):
+        if len(self._heatmaps) == 0:
+            raise ValueError("Network doesn't define the heatmaps")
+        return self._heatmaps
 
     def add_tower_summary(self, name, vars, reduced_method='mean'):
         assert reduced_method == 'mean' or reduced_method == 'sum', \
@@ -530,7 +539,7 @@ class Tester(Base):
                         tf.get_variable_scope().reuse_variables()
 
         self._outputs = aggregate_batch(self._output_list)
-
+        self._outputs.append(self.net.get_heatmaps())
         # run_meta = tf.RunMetadata()
         # opts = tf.profiler.ProfileOptionBuilder.float_operation()
         # flops = tf.profiler.profile(self.sess.graph, run_meta=run_meta, cmd='op', options=opts)
@@ -558,6 +567,7 @@ class Tester(Base):
 
         if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:
             for i in range(len(res)):
+                print(i, len(res[i]))
                 res[i] = res[i][:len(data[0])]
 
         return res

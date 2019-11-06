@@ -98,7 +98,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
             
             # for each human detection from clustered batch
             for image_id in range(start_id, end_id):
-               
+                
                 kps_result[image_id, :, :2] = coord[image_id - start_id]
                 kps_result[image_id, :, 2] = input_pose_scores[image_id - start_id]
 

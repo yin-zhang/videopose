@@ -23,7 +23,7 @@ class Dataset(object):
     'r_shoulder', 'l_elbow', 'r_elbow', 'l_wrist', 'r_wrist',
     'l_hip', 'r_hip', 'l_knee', 'r_knee', 'l_ankle', 'r_ankle']
     kps_symmetry = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16)]
-    kps_lines = [(1, 2), (0, 1), (0, 2), (2, 4), (1, 3), (6, 8), (8, 10), (5, 7), (7, 9), (12, 14), (14, 16), (11, 13), (13, 15), (5, 6), (11, 12)]
+    kps_lines = [(1, 2), (0, 1), (0, 2), (2, 4), (1, 3), (6, 8), (8, 10), (5, 7), (7, 9), (6,12), (12, 14), (14, 16), (5, 11), (11, 13), (13, 15), (5, 6), (11, 12)]
     kps_sigmas = np.array([
        .26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07, .87,
        .87, .89, .89]) / 10.0
@@ -31,8 +31,8 @@ class Dataset(object):
 
 
     test_on_trainset_path = osp.join('..', 'data', dataset_name, 'input_pose', 'test_on_trainset', 'result.json')
-    # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'person_keypoints_test-dev2017_Simple152_results.json') # set directory of the input pose
-    input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'douyin_0_pose.json') # set directory of the input pose
+    input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'person_keypoints_test-dev2017_Simple152_results.json') # set directory of the input pose
+    # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'douyin_0_pose.json') # set directory of the input pose
     img_path = osp.join('..', 'data', dataset_name, 'images')
     train_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'person_keypoints_train2017.json')
     val_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'person_keypoints_val2017.json')
