@@ -87,7 +87,7 @@ class ModelDesc(object):
         self._tower_summary.append([name, reduced_method])
 
     @abc.abstractmethod
-    def make_network(self, is_train):
+    def make_network(self, is_train, add_paf_loss=False):
         pass
 
 
@@ -387,7 +387,7 @@ class Trainer(Base):
                                                 weights_initializer=weights_initializer,
                                                 biases_initializer=biases_initializer):
                                 # loss over single GPU
-                                self.net.make_network(is_train=True, add_paf_loss=self.add_paf)
+                                self.net.make_network(is_train=True, add_paf_loss=self.cfg.add_paf)
                                 if i == self.cfg.num_gpus - 1:
                                     loss = self.net.get_loss(include_wd=True)
                                 else:
