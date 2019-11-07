@@ -325,35 +325,43 @@ class Model(ModelDesc):
         
         if is_train:
             
-            gt_heatmap = tf.stop_gradient(tf.reshape(tf.transpose(\
-                    self.render_onehot_heatmap(target_coord, cfg.output_shape),\
-                    [0, 3, 1, 2]), [cfg.batch_size, cfg.num_kps, -1]))
-            gt_coord = target_coord / cfg.input_shape[0] * cfg.output_shape[0]
-
-            # heatmap loss
-            out = tf.reshape(tf.transpose(heatmap_outs, [0, 3, 1, 2]), [cfg.batch_size, cfg.num_kps, -1])
-            gt = gt_heatmap
-            valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps])
-            loss_heatmap = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=gt, logits=out) * valid_mask)
-
             if add_paf_loss:
-                loss_paf = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=target_paf, logits=paf_outs) * target_paf_valid)
+                gt_heatmap = tf.stop_gradient(self.render_gaussian_heatmap(target_coord, cfg.output_shape, 1) / 255.0)
+                valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps])
+
+                loss_hm = tf.mean_squared_error(gt_heatmap * valid_mask, heatmap_outs * valid_mask)
+                loss_paf = tf.mean_squared_error(target_paf * target_paf_valid, paf_outs * target_paf_valid)
+                loss = loss_hm + loss_paf
+
+                self.add_tower_summary('loss_h', loss_hm)
+                self.add_tower_summary('loss_p', loss_paf)
+
+                self.set_loss(loss)
             else:
-                loss_paf = 0
+                gt_heatmap = tf.stop_gradient(tf.reshape(tf.transpose(\
+                        self.render_onehot_heatmap(target_coord, cfg.output_shape),\
+                        [0, 3, 1, 2]), [cfg.batch_size, cfg.num_kps, -1]))
+                gt_coord = target_coord / cfg.input_shape[0] * cfg.output_shape[0]
 
-            # coordinate loss
-            out = self.extract_coordinate(heatmap_outs) / cfg.input_shape[0] * cfg.output_shape[0]
-            gt = gt_coord
-            valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps, 1])
-            loss_coord = tf.reduce_mean(tf.abs(out - gt) * valid_mask)
+                # heatmap loss
+                out = tf.reshape(tf.transpose(heatmap_outs, [0, 3, 1, 2]), [cfg.batch_size, cfg.num_kps, -1])
+                gt = gt_heatmap
+                valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps])
+                loss_heatmap = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=gt, logits=out) * valid_mask)
 
-            loss = loss_heatmap + loss_coord + loss_paf
+                # coordinate loss
+                out = self.extract_coordinate(heatmap_outs) / cfg.input_shape[0] * cfg.output_shape[0]
+                gt = gt_coord
+                valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps, 1])
+                loss_coord = tf.reduce_mean(tf.abs(out - gt) * valid_mask)
 
-            self.add_tower_summary('loss_h', loss_heatmap)
-            self.add_tower_summary('loss_c', loss_coord)
-            self.add_tower_summary('loss_p', loss_paf)
+                loss = loss_heatmap + loss_coord + loss_paf
 
-            self.set_loss(loss)
+                self.add_tower_summary('loss_h', loss_heatmap)
+                self.add_tower_summary('loss_c', loss_coord)
+                self.add_tower_summary('loss_p', loss_paf)
+
+                self.set_loss(loss)
             
         else:
             out = self.extract_coordinate(heatmap_outs)
