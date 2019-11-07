@@ -151,7 +151,7 @@ class MapData(object):
         2. If you discard some datapoints, ``ds.size()`` will be incorrect.
     """
 
-    def __init__(self, ds, func):
+    def __init__(self, ds, func, add_pfd=False):
         """
         Args:
             ds (DataFlow): input DataFlow
@@ -160,10 +160,11 @@ class MapData(object):
         """
         self.ds = ds
         self.func = func
+        self.add_pfd = add_pfd
 
     def get_data(self):
         for dp in self.ds.get_data():
-            ret = self.func(copy(dp))  # shallow copy the list
+            ret = self.func(copy(dp), add_pfd=self.add_pfd)  # shallow copy the list
             if ret is not None:
                 yield ret
 
@@ -186,12 +187,13 @@ class MultiProcessMapDataZMQ(_ParallelMapData):
            produces. Although the order of data still isn't preserved.
     """
     class _Worker(mp.Process):
-        def __init__(self, identity, map_func, pipename, hwm):
+        def __init__(self, identity, map_func, pipename, hwm, add_pfd):
             super(MultiProcessMapDataZMQ._Worker, self).__init__()
             self.identity = identity
             self.map_func = map_func
             self.pipename = pipename
             self.hwm = hwm
+            self.add_pfd = add_pfd
 
         def run(self):
             print('Start data provider {}-{}'.format(self.pipename, self.identity))
@@ -204,10 +206,10 @@ class MultiProcessMapDataZMQ(_ParallelMapData):
 
             while True:
                 dp = loads(socket.recv(copy=False).bytes)
-                dp = self.map_func(dp)
+                dp = self.map_func(dp, add_pfd=self.add_pfd)
                 socket.send(dumps(dp), copy=False)
 
-    def __init__(self, ds, nr_proc, map_func, buffer_size=200, strict=False):
+    def __init__(self, ds, nr_proc, map_func, buffer_size=200, strict=False, add_pfd=False):
         """
         Args:
             ds (DataFlow): the dataflow to map
@@ -219,6 +221,7 @@ class MultiProcessMapDataZMQ(_ParallelMapData):
         _ParallelMapData.__init__(self, ds, buffer_size)
         self.nr_proc = nr_proc
         self.map_func = map_func
+        self.add_pfd = add_pfd
         self._strict = strict
         self._procs = []
         self._guard = DataFlowReentrantGuard()
@@ -243,7 +246,7 @@ class MultiProcessMapDataZMQ(_ParallelMapData):
         self._proc_ids = [u'{}'.format(k).encode('utf-8') for k in range(self.nr_proc)]
         worker_hwm = int(self._buffer_size * 2 // self.nr_proc)
         self._procs = [MultiProcessMapDataZMQ._Worker(
-            self._proc_ids[k], self.map_func, pipename, worker_hwm)
+            self._proc_ids[k], self.map_func, pipename, worker_hwm, self.add_pfd)
             for k in range(self.nr_proc)]
 
         self.ds.reset_state()

@@ -354,9 +354,9 @@ class Trainer(Base):
         from tfflat.data_provider import DataFromList, MultiProcessMapDataZMQ, BatchData, MapData
         data_load_thread = DataFromList(train_data)
         if self.cfg.multi_thread_enable:
-            data_load_thread = MultiProcessMapDataZMQ(data_load_thread, self.cfg.num_thread, generate_batch, strict=True)
+            data_load_thread = MultiProcessMapDataZMQ(data_load_thread, self.cfg.num_thread, generate_batch, strict=True, add_pfd=self.cfg.add_pfd)
         else:
-            data_load_thread = MapData(data_load_thread, generate_batch)
+            data_load_thread = MapData(data_load_thread, generate_batch, add_pfd=self.cfg.add_pfd)
         data_load_thread = BatchData(data_load_thread, self.cfg.batch_size)
 
         data_load_thread.reset_state()
