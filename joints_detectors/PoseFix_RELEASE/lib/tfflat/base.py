@@ -770,7 +770,7 @@ class Tester(Base):
             paf_outs = res[1]
             coords = self.extract_coordinate_paf(heatmap_outs, paf_outs)
             print('heatmap', heatmap_outs.shape, 'paf', paf_outs.shape)
-            return coords, heatmap_outs
+            return coords, np.concatenate(res, axis=0)
         else:
             if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:
                 for i in range(len(res)):

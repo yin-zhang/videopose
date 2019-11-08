@@ -29,7 +29,6 @@ class Dataset(object):
        .87, .89, .89]) / 10.0
     ignore_kps = []
 
-
     test_on_trainset_path = osp.join('..', 'data', dataset_name, 'input_pose', 'test_on_trainset', 'result.json')
     input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'person_keypoints_test-dev2017_Simple152_results.json') # set directory of the input pose
     
@@ -50,7 +49,7 @@ class Dataset(object):
  
             if (ann['image_id'] not in coco.imgs) or ann['iscrowd'] or (np.sum(joints[2::3]) == 0) or (ann['num_keypoints'] == 0):
                 continue
-           
+            
             # sanitize bboxes
             x, y, w, h = ann['bbox']
             img = coco.loadImgs(ann['image_id'])[0]
@@ -90,7 +89,8 @@ class Dataset(object):
         elif db_set == 'val':
             coco = COCO(self.val_annot_path)
         elif db_set == 'test':
-            coco = COCO(self.test_annot_path)
+            # coco = COCO(self.test_annot_path)
+            coco = COCO(self.val_annot_path)
         else:
             print('Unknown db_set')
             assert 0
