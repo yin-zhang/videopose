@@ -43,7 +43,6 @@ class Model(ModelDesc):
                     trainable=trainable, weights_initializer=msra_initializer,
                     padding='SAME', normalizer_fn=None, activation_fn=None,
                     scope='paf')
-                
                 out = (hms_out, paf_out)
             else:
                 out = slim.conv2d(out, cfg.num_kps, [1, 1],
@@ -304,8 +303,8 @@ class Model(ModelDesc):
             input_pose_valid = tf.placeholder(tf.float32, shape=[cfg.batch_size, cfg.num_kps])
             
             if add_paf_loss:
-                target_paf_valid = tf.placeholder(tf.float32, shape=[cfg.batch_size, len(cfg.kps_lines)*2])
-                target_paf = tf.placeholder(tf.float32, shape=[cfg.batch_size, len(cfg.kps_lines)*2, cfg.output_shape[0], cfg.output_shape[1]])
+                target_paf_valid = tf.placeholder(tf.float32, shape=[cfg.batch_size, 1, 1, len(cfg.kps_lines)*2])
+                target_paf = tf.placeholder(tf.float32, shape=[cfg.batch_size, cfg.output_shape[0], cfg.output_shape[1], len(cfg.kps_lines)*2])
                 self.set_inputs(image, target_coord, input_pose_coord, target_valid, input_pose_valid, target_paf, target_paf_valid)
             else:
                 self.set_inputs(image, target_coord, input_pose_coord, target_valid, input_pose_valid)
@@ -322,15 +321,13 @@ class Model(ModelDesc):
             heatmap_outs, paf_outs = self.head_net(resnet_fms, is_train, add_paf_output=add_paf_loss)
         else:
             heatmap_outs = self.head_net(resnet_fms, is_train)
-        
         if is_train:
             
             if add_paf_loss:
                 gt_heatmap = tf.stop_gradient(self.render_gaussian_heatmap(target_coord, cfg.output_shape, 1) / 255.0)
-                valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps])
-
-                loss_hm = tf.mean_squared_error(gt_heatmap * valid_mask, heatmap_outs * valid_mask)
-                loss_paf = tf.mean_squared_error(target_paf * target_paf_valid, paf_outs * target_paf_valid)
+                valid_mask = tf.reshape(target_valid, [cfg.batch_size, 1, 1, cfg.num_kps])
+                loss_hm = tf.losses.mean_squared_error(gt_heatmap * valid_mask, heatmap_outs * valid_mask)
+                loss_paf = tf.losses.mean_squared_error(target_paf * target_paf_valid, paf_outs * target_paf_valid)
                 loss = loss_hm + loss_paf
 
                 self.add_tower_summary('loss_h', loss_hm)

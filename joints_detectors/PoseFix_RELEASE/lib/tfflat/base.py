@@ -234,6 +234,9 @@ class Trainer(Base):
         ## modify train_data to the result of the decoupled initial model
         with open(d.test_on_trainset_path, 'r') as f:
             test_on_trainset = json.load(f)
+            for data in test_on_trainset:
+                if isinstance(data['image_id'], str):
+                    data['image_id'] = int(data['image_id'].split('.')[0])
         
         # sort list by img_id
         train_data = sorted(train_data, key=lambda k: k['image_id']) 
@@ -273,7 +276,6 @@ class Trainer(Base):
         while True:
             gt_img_id = data_gt[i][0]['image_id']
             out_img_id = data_out[j][0]['image_id']
-            
             if gt_img_id > out_img_id:
                 j = j + 1
             elif gt_img_id < out_img_id:
@@ -293,7 +295,6 @@ class Trainer(Base):
         for i in range(len(data_gt)):
             gt_img_id = data_gt[i][0]['image_id']
             out_img_id = data_out[j][0]['image_id']
-
             if gt_img_id == out_img_id:
                 aligned_data_out.append(data_out[j])
                 j = j + 1
@@ -312,13 +313,35 @@ class Trainer(Base):
             
             bbox_out_per_img = np.zeros((len(data_out[i]),4))
             joint_out_per_img = np.zeros((len(data_out[i]),self.cfg.num_kps*3))
+            #print(len(data_gt[i]), len(data_out[i]))
+            #if len(data_gt[i]) != len(data_out[i]):
+            #    print(data_gt[i])
+            #    print(data_out[i])
+            # assert len(data_gt[i]) == len(data_out[i])
             
-            assert len(data_gt[i]) == len(data_out[i])
-
             # for each data_out in an img
             for j in range(len(data_out[i])):
-                bbox = data_out[i][j]['bbox'] #x, y, width, height
                 joint = data_out[i][j]['keypoints']
+
+                if 'bbox' in data_out[i][j]:
+                    bbox = data_out[i][j]['bbox'] #x, y, width, height
+                else:
+                    coords = np.array(joint).reshape(-1,3)
+                    xmin = np.min(coords[:,0])
+                    xmax = np.max(coords[:,0])
+                    width = xmax - xmin if xmax > xmin else 20
+                    center = (xmin + xmax)/2.
+                    xmin = center - width/2.*1.1
+                    xmax = center + width/2.*1.1
+
+                    ymin = np.min(coords[:,1])
+                    ymax = np.max(coords[:,1])
+                    height = ymax - ymin if ymax > ymin else 20
+                    center = (ymin + ymax)/2.
+                    ymin = center - height/2.*1.1
+                    ymax = center + height/2.*1.1
+                    bbox = [xmin, xmax, ymin, ymax]
+                
                 bbox_out_per_img[j,:] = bbox
                 joint_out_per_img[j,:] = joint
             
@@ -329,6 +352,8 @@ class Trainer(Base):
                 
                 # IoU calculate with detection outputs of other methods
                 iou = self.compute_iou(bbox_gt.reshape(1,4), bbox_out_per_img)
+                if len(iou) == 0:
+                    continue
                 out_idx = np.argmax(iou)
                 data_gt[i][j]['estimated_joints'] = [joint_out_per_img[out_idx,:]]
 
@@ -354,9 +379,9 @@ class Trainer(Base):
         from tfflat.data_provider import DataFromList, MultiProcessMapDataZMQ, BatchData, MapData
         data_load_thread = DataFromList(train_data)
         if self.cfg.multi_thread_enable:
-            data_load_thread = MultiProcessMapDataZMQ(data_load_thread, self.cfg.num_thread, generate_batch, strict=True, add_pfd=self.cfg.add_pfd)
+            data_load_thread = MultiProcessMapDataZMQ(data_load_thread, self.cfg.num_thread, generate_batch, strict=True, add_paf=self.cfg.add_paf)
         else:
-            data_load_thread = MapData(data_load_thread, generate_batch, add_pfd=self.cfg.add_pfd)
+            data_load_thread = MapData(data_load_thread, generate_batch, add_paf=self.cfg.add_paf)
         data_load_thread = BatchData(data_load_thread, self.cfg.batch_size)
 
         data_load_thread.reset_state()

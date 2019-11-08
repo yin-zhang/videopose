@@ -16,7 +16,6 @@ def get_affine_transform(center,
                          shift=np.array([0, 0], dtype=np.float32),
                          inv=0):
     if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
-        print(scale)
         scale = np.array([scale, scale])
 
     src_w = scale[0]
@@ -92,6 +91,8 @@ def synthesize_pose(joints, estimated_joints, near_joints, area, num_overlap):
         gt_coord = np.expand_dims(synth_joints[j,:2],0)
         coord_list.append(gt_coord)
         # on top of swap gt
+        if len(near_joints.shape) == 2:
+            near_joints = np.expand_dims(near_joints, axis=0)
         swap_coord = near_joints[near_joints[:,j,2] > 0, j, :2]
         coord_list.append(swap_coord)
         # on top of inv gt, swap inv gt
@@ -152,8 +153,7 @@ def synthesize_pose(joints, estimated_joints, near_joints, area, num_overlap):
             synth_jitter[0] = x[rand_idx]
             synth_jitter[1] = y[rand_idx]
             synth_jitter[2] = 1
-      
-        
+              
         # miss error
         synth_miss = np.zeros(3)
         if num_valid_joint <= 5:
@@ -334,20 +334,20 @@ def synthesize_pose(joints, estimated_joints, near_joints, area, num_overlap):
 
     return synth_joints
 
-def generate_paf_pair(jA, jB, output_shape, threshold=1, valid=True):
-    w, h = output_shape
+def generate_paf_pair(jA, jB, input_shape, output_shape, threshold=1, valid=True):
+    h, w = output_shape
     m = np.zeros((h, w, 2), dtype=np.float32)
     if not valid: return m
     
     directAB = jB - jA
     distAB = np.linalg.norm(directAB)
-    directAB = directAB / distAB
+    directAB = directAB / (distAB + 1e-6)
 
-    minX = min(jA[0], jB[0]) - threshold
-    maxX = max(jA[0], jB[0]) + threshold
-    minY = min(jA[1], jB[1]) - threshold
-    maxY = max(jA[1], jB[1]) + threshold
-
+    minX = max(int(np.round(min(jA[0], jB[0]) - threshold)), 0)
+    maxX = min(int(np.round(max(jA[0], jB[0]) + threshold)), w)
+    minY = max(int(np.round(min(jA[1], jB[1]) - threshold)), 0)
+    maxY = min(int(np.round(max(jA[1], jB[1]) + threshold)), h)
+    # print(h, w, minX, maxX, minY, maxY, jA, jB)
     for x in range(minX, maxX):
         dx = x - jA[0]
         for y in range(minY, maxY):
@@ -358,16 +358,18 @@ def generate_paf_pair(jA, jB, output_shape, threshold=1, valid=True):
 
     return m
 
-def render_paf(coords, coords_valid, lines, output_shape):
+def render_paf(coords, coords_valid, lines, input_shape, output_shape):
     paf_list = []
+    paf_valid_list = []
     for ja,jb in lines:
-        kp_ja = coords[ja]
-        kp_jb = coords[jb]
+        kp_ja = coords[ja] * output_shape[1] / input_shape[1]
+        kp_jb = coords[jb] * output_shape[0] / input_shape[0]
 
         valid = coords_valid[ja] > 0 and coords_valid[jb] > 0
-        paf = generate_paf_pair(kp_ja, kp_jb, output_shape, valid=valid)
+        paf = generate_paf_pair(kp_ja, kp_jb, input_shape, output_shape, valid=valid)
         paf_list.append(paf)
-    return paf_list
+        paf_valid_list += [valid, valid]
+    return paf_list, paf_valid_list
 
 def generate_batch(d, stage='train', add_paf=False):
     
@@ -391,8 +393,8 @@ def generate_batch(d, stage='train', add_paf=False):
     if stage == 'train':
 
         joints = np.array(d['joints']).reshape(-1,cfg.num_kps,3)
-        estimated_joints = np.array(d['estimated_joints']).reshape(-1,cfg.num_kps,3)
-        near_joints = np.array(d['near_joints']).reshape(-1,cfg.num_kps,3)
+        estimated_joints = np.array(d['estimated_joints']).reshape(-1,cfg.num_kps,3) if 'estimated_joints' in d else np.empty([0, cfg.num_kps, 3])
+        near_joints = np.array(d['near_joints']).reshape(-1,cfg.num_kps,3) if 'near_joints' in d else np.empty([0, cfg.num_kps, 3])
         total_joints = np.concatenate([joints, estimated_joints, near_joints], axis=0)
 
         # data augmentation
@@ -418,8 +420,8 @@ def generate_batch(d, stage='train', add_paf=False):
                     total_joints[i,j,:2] = affine_transform(total_joints[i,j,:2], trans)
                     total_joints[i,j,2] *= ((total_joints[i,j,0] >= 0) & (total_joints[i,j,0] < cfg.input_shape[1]) & (total_joints[i,j,1] >= 0) & (total_joints[i,j,1] < cfg.input_shape[0]))
         joints = total_joints[0]
-        estimated_joints = total_joints[1]
-        near_joints = total_joints[2:]
+        estimated_joints = total_joints[1] if estimated_joints.shape[0] > 0 else total_joints[0]
+        near_joints = total_joints[2:] if near_joints.shape[0] > 0 else total_joints[0]
 
         xmin, ymin, xmax, ymax = bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3]
         pt1 = affine_transform(np.array([xmin, ymin]), trans)
@@ -428,7 +430,7 @@ def generate_batch(d, stage='train', add_paf=False):
         area = math.sqrt(pow(pt2[0] - pt1[0],2) + pow(pt2[1] - pt1[1],2)) * math.sqrt(pow(pt3[0] - pt2[0],2) + pow(pt3[1] - pt2[1],2))
 
         # input pose synthesize
-        synth_joints = synthesize_pose(joints, estimated_joints, near_joints, area, d['overlap'])
+        synth_joints = synthesize_pose(joints, estimated_joints, near_joints, area, d['overlap'] if 'overlap' in d else 0)
 
         target_coord = joints[:,:2]
         target_valid = joints[:,2]
@@ -458,13 +460,14 @@ def generate_batch(d, stage='train', add_paf=False):
             cv2.imwrite(osp.join(cfg.vis_dir, filename + '_input_pose.jpg'), tmpimg)
        
         if add_paf:
-            paf = render_paf(target_coord, target_valid, cfg.kps_lines, cfg.output_shape)
+            paf, paf_valid = render_paf(target_coord, target_valid, cfg.kps_lines, cfg.input_shape, cfg.output_shape)
             return [cropped_img,
                     target_coord, 
                     input_pose_coord,
                     (target_valid > 0),
                     (input_pose_valid > 0),
-                    paf]
+                    paf,
+                    paf_valid]
         else:
             return [cropped_img,
                     target_coord, 
