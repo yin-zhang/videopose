@@ -212,8 +212,10 @@ class Model(ModelDesc):
             
         else:
             if add_paf_loss:
-                self.extract_coordinate_paf()
+                out = tf.transpose(heatmap_outs, [0, 3, 1, 2])
+                self.set_outputs(out)
+                self.set_heatmaps(out)
             else:
                 out = self.extract_coordinate(heatmap_outs)
-            self.set_outputs(out)
-            self.set_heatmaps(tf.transpose(heatmap_outs, [0, 3, 1, 2]))
+                self.set_outputs(out)
+                self.set_heatmaps(tf.transpose(heatmap_outs, [0, 3, 1, 2]))

@@ -201,15 +201,16 @@ def test(test_model):
     # annotation load
     d = Dataset()
     annot = d.load_annot(cfg.testset)
-    
+    print('=================', type(annot))
     # input pose load
     input_pose = d.input_pose_load(annot, cfg.testset)
-    
+    print('input_pose', len(input_pose))
     # job assign (multi-gpu)
     from tfflat.mp_utils import MultiProc
     img_start = 0
     ranges = [0]
     img_num = len(np.unique([i['image_id'] for i in input_pose]))
+    print(img_num)
     images_per_gpu = int(img_num / len(args.gpu_ids.split(','))) + 1
     for run_img in range(img_num):
         img_end = img_start + 1

@@ -110,10 +110,14 @@ class Dataset(object):
         gt_img_id = self.load_imgid(annot)
         with open(self.input_pose_path, 'r') as f:
             input_pose = json.load(f)
+            for pose in input_pose:
+                if isinstance(pose['image_id'], str):
+                    pose['image_id'] = int(pose['image_id'].split('.')[0])
 
         input_pose = [i for i in input_pose if i['image_id'] in gt_img_id]
         input_pose = [i for i in input_pose if i['category_id'] == 1]
         input_pose = [i for i in input_pose if i['score'] > 0]
+
         input_pose.sort(key=lambda x: (x['image_id'], x['score']), reverse=True)
 
         img_id = []
