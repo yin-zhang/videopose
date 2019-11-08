@@ -49,18 +49,15 @@ def save_mergedHeatmaps(hms, path, c=5, img_res=None):
     plt.close()
 
 def test_net(tester, input_pose, det_range, gpu_id):
-    tf.logging.info('test net ------------------------------------')
     dump_results = []
-
     start_time = time.time()
-
     img_start = det_range[0]
     img_id = 0
     img_id2 = 0
     pbar = tqdm(total=det_range[1] - img_start - 1, position=gpu_id)
     pbar.set_description("GPU %s" % str(gpu_id))
     while img_start < det_range[1]:
-        print(img_start, '-----------------------')
+        
         img_end = img_start + 1
         im_info = input_pose[img_start]
         while img_end < det_range[1] and input_pose[img_end]['image_id'] == im_info['image_id']:
@@ -80,7 +77,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
         for batch_id in range(0, len(cropped_data), cfg.test_batch_size):
             start_id = batch_id
             end_id = min(len(cropped_data), batch_id + cfg.test_batch_size)
-             
+            
             imgs = []
             input_pose_coords = []
             input_pose_valids = []
@@ -207,7 +204,7 @@ def test(test_model):
     
     # input pose load
     input_pose = d.input_pose_load(annot, cfg.testset)
-    print(len(input_pose))
+    
     # job assign (multi-gpu)
     from tfflat.mp_utils import MultiProc
     img_start = 0
