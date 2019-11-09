@@ -1,3 +1,4 @@
+
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import numpy as np
@@ -177,16 +178,14 @@ class Model(ModelDesc):
                 gt_heatmap = tf.stop_gradient(self.render_gaussian_heatmap(target_coord, cfg.output_shape, 1) / 255.0)
                 valid_mask = tf.reshape(target_valid, [cfg.batch_size, 1, 1, cfg.num_kps])
                 hm_diff = (gt_heatmap - heatmap_outs) * valid_mask
-                hm_diff = hm_diff.reshape(hm_diff.get_shape()[0], -1)
-
-                loss_hm = tf.mean(tf.norm(hm_diff, axis=1))
-
-                paf_diff = (target_paf - paf_outs) * target_paf_valid
-                paf_diff = paf_diff.reshape(paf_diff.get_shape()[0], -1)
-
-                loss_paf = tf.mean(tf.norm(paf_diff, axis=1))
+                hm_diff = tf.reshape(hm_diff, [cfg.batch_size, -1])
+                hm_diff = tf.norm(hm_diff, axis=1)
+                loss_hm = tf.reduce_mean(hm_diff)
                 
-                loss = loss_hm + loss_paf
+                paf_diff = (target_paf - paf_outs) * target_paf_valid
+                paf_diff = tf.reshape(paf_diff, [cfg.batch_size, -1])
+                loss_paf = tf.reduce_mean(tf.norm(paf_diff, axis=1)) / 10
+                loss = loss_paf
 
                 self.add_tower_summary('loss_h', loss_hm)
                 self.add_tower_summary('loss_p', loss_paf)

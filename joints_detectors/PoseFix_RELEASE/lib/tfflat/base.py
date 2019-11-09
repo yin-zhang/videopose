@@ -16,6 +16,34 @@ from .timer import Timer
 from .logger import colorlogger
 from .utils import approx_equal
 
+import cv2
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def save_mergedHeatmaps(hms, path, c=5, img_res=None):
+    assert len(hms.shape) == 3, 'Dimension of heatmaps should be 3, keypoints x h x w'
+    n = hms.shape[0] + (0 if img_res is None else 1)
+    r = n // c + (0 if n % c == 0 else 1)
+
+    #joint_names = ['Nose', 'LEye', 'REye', 'LEar', 'REar', 'LShoulder', 'RShoulder', 'LElbow', 'RElbow', 'LWrist', 'RWrist', 'LHip', 'RHip', 'LKnee', 'Rknee', 'LAnkle', 'RAnkle']
+
+    plt.figure()
+    plt.subplots_adjust(hspace=0.4)
+    for i in range(hms.shape[0]):
+        ax = plt.subplot(r, c, i + 1)
+        #ax.set_title('{:d} {}'.format(i, joint_names[i]), fontsize=10)
+        ax.set_title('{:d}'.format(i), fontsize=10)
+        sns.heatmap(hms[i], cbar=False, cmap='viridis',xticklabels=False,yticklabels=False, ax=ax)
+    
+    if img_res is not None:
+        ax = plt.subplot(r, c, n)
+        ax.set_axis_off()
+        ax.set_title('res', fontsize=10)
+        ax.imshow(img_res)
+
+    plt.savefig(path)
+    plt.close()
+
 class ModelDesc(object):
     __metaclass__ = abc.ABCMeta
     def __init__(self):
@@ -475,7 +503,23 @@ class Trainer(Base):
             self.read_timer.tic()
             feed_dict = self.next_feed()
             self.read_timer.toc()
-
+            count = 0
+            for v in feed_dict.values():
+                if v.shape == (16, 96, 72, 34):
+                    np.savez('temp/{:d}.npz'.format(count), data=v)
+                count += 1
+                '''
+                if v.shape == (16, 96, 72, 34):
+                    for i in range(v.shape[0]):
+                        for j in range(34):
+                            temp = v[i,:,:,j].copy()
+                            temp[np.abs(v[i,:,:,j]) > 1e-6] = 255
+                            cv2.imwrite('temp/{:d}_{:d}.jpg'.format(count, j), temp.astype(np.uint8))
+                        # save_mergedHeatmaps(np.transpose(v[i], (2, 1, 0)), 'temp/{:d}.jpg'.format(count))
+                        count += 1
+                print(v.shape)
+                '''
+            break
             # train one step
             self.gpu_timer.tic()
             _, self.lr_eval, *summary_res = self.sess.run(
@@ -521,7 +565,7 @@ class Tester(Base):
         peak = peak & (hm[1:-1,1:-1] > hm[1:-1, 2:])
         peak = peak & (hm[1:-1,1:-1] > hm[:-2,  2:])
         peak = np.pad(peak, ((1,1),(1,1)), mode='constant', constant_values=False)
-
+    
         peak_val = hm[peak]
         peak_idx = np.array(peak.nonzero()).astype(np.float32)
         
@@ -549,6 +593,7 @@ class Tester(Base):
         for i in range(len(heatmap_outs)):
             # peak_idx: 17x2 (x, y); peak_val: 17
             peak_idx, peak_val = self.find_peaks(heatmap_outs[i])
+            print('peek', i, len(peak_idx), len(peak_val))
             can_idx_list.append(peak_idx)
             can_val_list.append(peak_val)
 
@@ -556,14 +601,15 @@ class Tester(Base):
         subset_size = len(heatmap_outs) + 2
         subset = []
         lower_part = False
-        for line_idx in range(len(cfg.kps_lines)):
-            indexA, indexB = cfg.kps_lines[line_idx]
+        for line_idx in range(len(self.cfg.kps_lines)):
+            indexA, indexB = self.cfg.kps_lines[line_idx]
             candA = can_idx_list[indexA]
             candB = can_idx_list[indexB]
             nA = candA.shape[0]
             nB = candB.shape[0]
-
+            
             if nA == 0 or nB == 0:
+                print('condition one', nA, nB)
                 if nA == 0:
                     for i in range(nB):
                         num = False
@@ -589,6 +635,8 @@ class Tester(Base):
                             subset[-1][-1] = 1
                             subset[-1][-2] = can_val_list[indexA][i]
             else:
+                print('condition Two', nA, nB)
+                vec_cand = []
                 paf = paf_outs[line_idx*2:line_idx*2+2]
                 for i in range(nA):
                     for j in range(nB):
@@ -599,33 +647,37 @@ class Tester(Base):
                         num_inter = 10
                         mX = np.round(np.linspace(candA[i][0], candB[j][0], num_inter)).astype(np.int32)
                         mY = np.round(np.linspace(candB[i][1], candB[j][1], num_inter)).astype(np.int32)
-
                         p_sum = 0
                         p_count = 0
                         for lm in range(num_inter):
-                            direct = paf[:, mY, mX]
+                            direct = paf[:, mY[lm], mX[lm]]                            
                             score = vec[0] * direct[0] + vec[1] * direct[1]
+                            print(lm, direct, vec, score)
                             if score > 0.05:
                                 p_sum += score
                                 p_count += 1
+
+                        if p_count == 0:
+                            continue
 
                         suc_ratio = p_count / num_inter
                         mid_score = p_sum / p_count + min(height/vecNorm-1, 0)
 
                         if mid_score > 0 and suc_ratio > 0.8:
                             score = mid_score
-                            temp.append((i, j, score))
-                        
-                if len(temp) > 0:
-                    temp = np.array(temp, dtype=[('x',int), ('y',int), ('score', float)])
-                    temp = np.sort(temp, dtype='score')[::-1]
+                            vec_cand.append((i, j, score))
 
+                print('vector length', len(vec_cand))
+                if len(vec_cand) > 0:
+                    vec_cand = np.array(vec_cand, dtype=[('x',int), ('y',int), ('score', float)])
+                    vec_cand = np.sort(vec_cand, dtype='score')[::-1]
+                print(vec_cand)
                 connectionK = []
                 occurA = [0] * nA
                 occurB = [0] * nB
                 counter = 0
-                for row in range(len(temp)):
-                    x,y,score = temp[row]
+                for row in range(len(vec_cand)):
+                    x,y,score = vec_cand[row]
                     
                     if occurA[x] == 0 and occurB[y] == 0:
                         connectionK.append((x, y, score))
@@ -659,6 +711,7 @@ class Tester(Base):
                                 subset[j][-2] = subset[j][-2] + hm_score_indexB + connectionK[i][2]
                         if num == 0:
                             subset.append(gen_data(i))
+                print('subset length', len(subset))
                                 
         for i in reversed(range(len(subset))):
             if subset[i][-1] < 3 or subset[i][-2] / subset[i][-1] < 0.2:
@@ -669,17 +722,17 @@ class Tester(Base):
             pose = np.zeros([len(heatmap_outs), 2], dtype=np.float32)
             for j in range(len(subset[i])):
                 if len(can_idx_list[j]) > 0:
-                    pose[j][0] = can_idx_list[j][subset[i][j]][0] / width * cfg.input_shape[0]
-                    pose[j][1] = can_idx_list[j][subset[i][j]][1] / width * cfg.input_shape[1]
+                    pose[j][0] = can_idx_list[j][subset[i][j]][0] / width * self.cfg.input_shape[0]
+                    pose[j][1] = can_idx_list[j][subset[i][j]][1] / width * self.cfg.input_shape[1]
             hm_pose.append(pose)
         return hm_pose
 
     def extract_coordinate_paf(self, heatmap_outs, paf_outs):
         assert len(heatmap_outs) == len(paf_outs), 'heatmap count: {}, paf count:'.format(heatmap_outs.shape, paf_outs.shape)
-
+        print('++', len(heatmap_outs), heatmap_outs[0].shape)
         output_hm = []
-        for i in range(heatmap_outs.shape[0]):
-            output_hm += extract_coordinate_paf_one(heatmap_outs[i], paf_outs[i])
+        for i in range(len(heatmap_outs)):
+            output_hm += self.extract_coordinate_paf_one(heatmap_outs[i], paf_outs[i])
             
         return output_hm
 
@@ -768,8 +821,11 @@ class Tester(Base):
         if self.cfg.add_paf:
             heatmap_outs = res[0]
             paf_outs = res[1]
-            coords = self.extract_coordinate_paf(heatmap_outs, paf_outs)
-            print('heatmap', heatmap_outs.shape, 'paf', paf_outs.shape)
+            coords_outs = []
+
+            for i in range(len(heatmap_outs)):
+                coords = self.extract_coordinate_paf(heatmap_outs[i], paf_outs[i])
+            
             return coords, np.concatenate(res, axis=0)
         else:
             if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:

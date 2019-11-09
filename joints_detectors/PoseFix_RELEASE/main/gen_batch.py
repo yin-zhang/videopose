@@ -335,6 +335,7 @@ def synthesize_pose(joints, estimated_joints, near_joints, area, num_overlap):
     return synth_joints
 
 def generate_paf_pair(jA, jB, input_shape, output_shape, threshold=1, valid=True):
+    print(jA, jB, input_shape, output_shape, valid)
     h, w = output_shape
     m = np.zeros((h, w, 2), dtype=np.float32)
     if not valid: return m
@@ -348,6 +349,7 @@ def generate_paf_pair(jA, jB, input_shape, output_shape, threshold=1, valid=True
     minY = max(int(np.round(min(jA[1], jB[1]) - threshold)), 0)
     maxY = min(int(np.round(max(jA[1], jB[1]) + threshold)), h)
     # print(h, w, minX, maxX, minY, maxY, jA, jB)
+    '''
     for x in range(minX, maxX):
         dx = x - jA[0]
         for y in range(minY, maxY):
@@ -355,7 +357,8 @@ def generate_paf_pair(jA, jB, input_shape, output_shape, threshold=1, valid=True
             d = abs(dx * directAB[1] - dy * directAB[0])
             if d <= threshold:
                 m[y,x] = directAB
-
+    '''
+    m[:,20] = 1
     return m
 
 def render_paf(coords, coords_valid, lines, input_shape, output_shape):
@@ -369,10 +372,10 @@ def render_paf(coords, coords_valid, lines, input_shape, output_shape):
         paf = generate_paf_pair(kp_ja, kp_jb, input_shape, output_shape, valid=valid)
         paf_list.append(paf)
         paf_valid_list += [valid, valid]
-    return paf_list, paf_valid_list
+    return np.concatenate(paf_list, axis=2), paf_valid_list
 
 def generate_batch(d, stage='train', add_paf=False):
-    
+    print(os.path.join(cfg.img_path, d['imgpath']))
     img = cv2.imread(os.path.join(cfg.img_path, d['imgpath']), cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
     if img is None:
         print('cannot read ' + os.path.join(cfg.img_path, d['imgpath']))
