@@ -335,7 +335,11 @@ def synthesize_pose(joints, estimated_joints, near_joints, area, num_overlap):
     return synth_joints
 
 def generate_paf_pair(jA, jB, input_shape, output_shape, threshold=1, valid=True):
+<<<<<<< Updated upstream
     print(jA, jB, input_shape, output_shape, valid)
+=======
+    
+>>>>>>> Stashed changes
     h, w = output_shape
     m = np.zeros((h, w, 2), dtype=np.float32)
     if not valid: return m

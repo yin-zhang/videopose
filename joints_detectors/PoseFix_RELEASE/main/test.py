@@ -178,7 +178,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
         score_result = np.copy(kps_result[:, :, 2])
         kps_result[:, :, 2] = 1
         kps_result = kps_result.reshape(-1,cfg.num_kps*3)
-       
+        
         # save result
         for i in range(len(kps_result)):
             if cfg.dataset == 'COCO':
