@@ -97,7 +97,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
             crop_infos = np.array(crop_infos)
             
             # forward
-            coord,heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
+            coord, heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
             #heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
             #print('-------', type(heatmaps))
             #print('=======', len(heatmaps), heatmaps[0].shape, heatmaps[1].shape)
