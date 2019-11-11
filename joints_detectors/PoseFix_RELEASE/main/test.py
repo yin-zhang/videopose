@@ -98,6 +98,11 @@ def test_net(tester, input_pose, det_range, gpu_id):
             
             # forward
             coord,heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
+            #heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
+            #print('-------', type(heatmaps))
+            #print('=======', len(heatmaps), heatmaps[0].shape, heatmaps[1].shape)
+            #np.savez('temp/imgs.npz', imgs=imgs, heatmaps=heatmaps[0], paf=heatmaps[1])
+            #exit()
             heatmaps=heatmaps[0]
             if cfg.flip_test:
                 flip_imgs = imgs[:, :, ::-1, :]

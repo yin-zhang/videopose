@@ -29,6 +29,3 @@ args = parse_args()
 cfg.set_args(args.gpu_ids, args.continue_train)
 trainer = Trainer(Model(), cfg)
 trainer.train()
-
-
-

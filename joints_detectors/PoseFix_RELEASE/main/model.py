@@ -179,13 +179,16 @@ class Model(ModelDesc):
                 valid_mask = tf.reshape(target_valid, [cfg.batch_size, 1, 1, cfg.num_kps])
                 hm_diff = (gt_heatmap - heatmap_outs) * valid_mask
                 hm_diff = tf.reshape(hm_diff, [cfg.batch_size, -1])
-                hm_diff = tf.norm(hm_diff, axis=1)
+                hm_diff = tf.reduce_sum(tf.square(hm_diff), axis=1) + tf.to_float(1e-16)
+                hm_diff = tf.sqrt(hm_diff)
                 loss_hm = tf.reduce_mean(hm_diff)
                 
                 paf_diff = (target_paf - paf_outs) * target_paf_valid
                 paf_diff = tf.reshape(paf_diff, [cfg.batch_size, -1])
-                loss_paf = tf.reduce_mean(tf.norm(paf_diff, axis=1)) / 10
-                loss = loss_paf
+                paf_diff = tf.reduce_sum(tf.square(paf_diff), axis=1) + tf.to_float(1e-16)
+                paf_diff = tf.sqrt(paf_diff)
+                loss_paf = tf.reduce_mean(paf_diff)
+                loss = loss_hm + loss_paf
 
                 self.add_tower_summary('loss_h', loss_hm)
                 self.add_tower_summary('loss_p', loss_paf)
@@ -219,9 +222,10 @@ class Model(ModelDesc):
             
         else:
             if add_paf_loss:
-                out = tf.transpose(heatmap_outs, [0, 3, 1, 2])
-                self.set_outputs(out)
-                self.set_heatmaps(out)
+                heatmap_outs = tf.transpose(heatmap_outs, [0, 3, 1, 2])
+                paf_outs = tf.transpose(paf_outs, [0, 3, 1, 2])
+                self.set_outputs(heatmap_outs, paf_outs)
+                self.set_heatmaps(heatmap_outs, paf_outs)
             else:
                 out = self.extract_coordinate(heatmap_outs)
                 self.set_outputs(out)

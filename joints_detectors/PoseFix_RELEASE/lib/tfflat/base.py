@@ -503,23 +503,24 @@ class Trainer(Base):
             self.read_timer.tic()
             feed_dict = self.next_feed()
             self.read_timer.toc()
-            count = 0
-            for v in feed_dict.values():
-                if v.shape == (16, 96, 72, 34):
-                    np.savez('temp/{:d}.npz'.format(count), data=v)
-                count += 1
-                '''
-                if v.shape == (16, 96, 72, 34):
-                    for i in range(v.shape[0]):
-                        for j in range(34):
-                            temp = v[i,:,:,j].copy()
-                            temp[np.abs(v[i,:,:,j]) > 1e-6] = 255
-                            cv2.imwrite('temp/{:d}_{:d}.jpg'.format(count, j), temp.astype(np.uint8))
-                        # save_mergedHeatmaps(np.transpose(v[i], (2, 1, 0)), 'temp/{:d}.jpg'.format(count))
-                        count += 1
-                print(v.shape)
-                '''
-            break
+            #count = 0
+            #for v in feed_dict.values():
+            #    if v.shape == (16, 96, 72, 34):
+            #        print('sum check D', np.sum(v[0,:,20,8]))
+            #        np.savez('temp/{:d}.npz'.format(count), data=v)
+            #    count += 1
+            #    
+            #    if v.shape == (16, 96, 72, 34):
+            #        for i in range(v.shape[0]):
+            #            for j in range(34):
+            #                temp = v[i,:,:,j].copy()
+            #                temp[np.abs(v[i,:,:,j]) > 1e-6] = 255
+            #                cv2.imwrite('temp/{:d}_{:d}.jpg'.format(count, j), temp.astype(np.uint8))
+            #            # save_mergedHeatmaps(np.transpose(v[i], (2, 1, 0)), 'temp/{:d}.jpg'.format(count))
+            #            count += 1
+            #    print(v.shape)
+            #    
+            #break
             # train one step
             self.gpu_timer.tic()
             _, self.lr_eval, *summary_res = self.sess.run(
@@ -826,7 +827,8 @@ class Tester(Base):
             for i in range(len(heatmap_outs)):
                 coords = self.extract_coordinate_paf(heatmap_outs[i], paf_outs[i])
             
-            return coords, np.concatenate(res, axis=0)
+            return coords, np.concatenate([heatmap_outs, paf_outs], axis=0)
+            #return res#np.concatenate(res, axis=0)
         else:
             if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:
                 for i in range(len(res)):

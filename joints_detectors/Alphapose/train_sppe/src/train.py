@@ -15,7 +15,7 @@ from utils.img import flip_v, shuffleLR_v, vis_heatmap, torch_to_im
 from evaluation import prediction
 from tensorboardX import SummaryWriter
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]='2,3,4,5,6,7'
+os.environ["CUDA_VISIBLE_DEVICES"]='0,1,2,3,4,5,6,7'
 
 def train(train_loader, m, criterion, optimizer, writer):
     lossLogger = DataLogger()
@@ -199,12 +199,16 @@ def main():
         train_dataset = h36m.H36M(train=True)
         val_dataset = h36m.H36M(train=False)
 
+
+    '''
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=opt.trainBatch, shuffle=False, sampler=RandomSampler(train_dataset, replacement=True, num_samples=len(train_dataset)//10), num_workers=opt.nThreads, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=opt.validBatch, shuffle=False, sampler=RandomSampler(val_dataset, replacement=True, num_samples=len(val_dataset)//10), num_workers=opt.nThreads, pin_memory=True)
-
+    '''
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.trainBatch, shuffle=True, num_workers=opt.nThreads, pin_memory=True)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=opt.validBatch, shuffle=False, sampler=RandomSampler(val_dataset, replacement=True, num_samples=len(val_dataset)//8), num_workers=opt.nThreads, pin_memory=True)
     #show_loader_image('train_check_images', train_loader, joint_names=train_dataset.joint_names)
     #show_loader_image('valid_check_images', val_loader, joint_names=val_dataset.joint_names)
     #return

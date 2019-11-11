@@ -51,9 +51,9 @@ class Config:
 
     ## others
     multi_thread_enable = True
-    num_thread = 10
-    gpu_ids = '0'
-    num_gpus = 1
+    num_thread = 56
+    gpu_ids = '0-7'
+    num_gpus = 8
     continue_train = False
     display = 1
     add_paf = True

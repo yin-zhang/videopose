@@ -335,11 +335,6 @@ def synthesize_pose(joints, estimated_joints, near_joints, area, num_overlap):
     return synth_joints
 
 def generate_paf_pair(jA, jB, input_shape, output_shape, threshold=1, valid=True):
-<<<<<<< Updated upstream
-    print(jA, jB, input_shape, output_shape, valid)
-=======
-    
->>>>>>> Stashed changes
     h, w = output_shape
     m = np.zeros((h, w, 2), dtype=np.float32)
     if not valid: return m
@@ -352,8 +347,7 @@ def generate_paf_pair(jA, jB, input_shape, output_shape, threshold=1, valid=True
     maxX = min(int(np.round(max(jA[0], jB[0]) + threshold)), w)
     minY = max(int(np.round(min(jA[1], jB[1]) - threshold)), 0)
     maxY = min(int(np.round(max(jA[1], jB[1]) + threshold)), h)
-    # print(h, w, minX, maxX, minY, maxY, jA, jB)
-    '''
+    
     for x in range(minX, maxX):
         dx = x - jA[0]
         for y in range(minY, maxY):
@@ -361,8 +355,6 @@ def generate_paf_pair(jA, jB, input_shape, output_shape, threshold=1, valid=True
             d = abs(dx * directAB[1] - dy * directAB[0])
             if d <= threshold:
                 m[y,x] = directAB
-    '''
-    m[:,20] = 1
     return m
 
 def render_paf(coords, coords_valid, lines, input_shape, output_shape):
@@ -379,7 +371,7 @@ def render_paf(coords, coords_valid, lines, input_shape, output_shape):
     return np.concatenate(paf_list, axis=2), paf_valid_list
 
 def generate_batch(d, stage='train', add_paf=False):
-    print(os.path.join(cfg.img_path, d['imgpath']))
+    #print(os.path.join(cfg.img_path, d['imgpath']))
     img = cv2.imread(os.path.join(cfg.img_path, d['imgpath']), cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
     if img is None:
         print('cannot read ' + os.path.join(cfg.img_path, d['imgpath']))
@@ -468,6 +460,7 @@ def generate_batch(d, stage='train', add_paf=False):
        
         if add_paf:
             paf, paf_valid = render_paf(target_coord, target_valid, cfg.kps_lines, cfg.input_shape, cfg.output_shape)
+            #print('sum check B', np.sum(paf[:,20,6]), 'paf shape', paf.shape)
             return [cropped_img,
                     target_coord, 
                     input_pose_coord,
