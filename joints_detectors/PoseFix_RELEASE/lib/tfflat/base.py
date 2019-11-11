@@ -696,6 +696,23 @@ class Tester(Base):
                 if line_idx == 0 or len(subset) == 0 or (not lower_part and line_idx in [5, 7]):
                     for i in range(len(connectionK)):
                         subset.append(gen_data(i))
+                elif line_idx in [5, 7]:
+                    for i in range(len(subset)):
+                        add_joint = False
+                        if subset[i][indexA] < 0:
+                            hm_score_indexA = can_val_list[indexA][connectionK[i][0]]
+                            subset[i][indexA] = connectionK[i][0]
+                            subset[i][-1] += 1
+                            subset[i][-2] += hm_score_indexA
+                            add_joint = True
+                        if subset[i][indexB] < 0:
+                            hm_score_indexB = can_val_list[indexB][connectionK[i][1]]
+                            subset[i][indexB] = connectionK[i][1]
+                            subset[i][-1] += 1
+                            subset[i][-2] += hm_score_indexB
+                            add_joint = True
+                        if add_joint:
+                            subset[i][-2] += connectionK[i][2]
                 else:
                     for i in range(len(connectionK)):
                         num = 0
@@ -704,8 +721,8 @@ class Tester(Base):
                                 num += 1
                                 hm_score_indexB = can_val_list[indexB][connectionK[i][1]]
                                 subset[j][indexB] = connectionK[i][1]
-                                subset[j][-1] = subset[j][-1] + 1
-                                subset[j][-2] = subset[j][-2] + hm_score_indexB + connectionK[i][2]
+                                subset[j][-1] += 1
+                                subset[j][-2] += hm_score_indexB + connectionK[i][2]
                         if num == 0:
                             subset.append(gen_data(i))
                                 
