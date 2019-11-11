@@ -737,9 +737,9 @@ class Tester(Base):
                 max_sco = subset[i][-1]
                 max_idx = i
 
-        pose = np.zeros([len(heatmap_outs), 2], dtype=np.float32)
+        pose = np.ones([len(heatmap_outs), 2], dtype=np.float32) * -1
         for j in range(len(can_idx_list)):
-            if len(can_idx_list[j]) > 0:
+            if len(can_idx_list[j]) > 0 and len(subset) > 0 and subset[max_idx][j] >= 0:
                 pose[j][0] = can_idx_list[j][subset[max_idx][j]][0] / width * self.cfg.input_shape[1]
                 pose[j][1] = can_idx_list[j][subset[max_idx][j]][1] / height * self.cfg.input_shape[0]
         return pose
@@ -834,14 +834,14 @@ class Tester(Base):
         res_heatmaps = []
 
         if self.cfg.add_paf:
-            heatmap_outs = res[0]
-            paf_outs = res[1]
-            coords_outs = []
+            heatmap_outs = res[0][0]
+            paf_outs = res[0][1]
 
-            for i in range(len(heatmap_outs)):
-                coords = self.extract_coordinate_paf(heatmap_outs[i], paf_outs[i])
+            coord_outs = self.extract_coordinate_paf(heatmap_outs, paf_outs)
             
-            return coords, np.concatenate([heatmap_outs, paf_outs], axis=0)
+            assert len(heatmap_outs) == len(paf_outs), 'heatmap shape {} is not equal with paf shape {}'.format(heatmap_outs.shape, paf_outs.shape)
+
+            return coord_outs, np.concatenate([heatmap_outs, paf_outs], axis=1)
 
         else:
             if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:

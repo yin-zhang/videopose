@@ -36,7 +36,10 @@ def save_mergedHeatmaps(hms, path, c=5, img_res=None):
     plt.subplots_adjust(hspace=0.4)
     for i in range(hms.shape[0]):
         ax = plt.subplot(r, c, i + 1)
-        ax.set_title('{:d} {}'.format(i, joint_names[i]), fontsize=10)
+        if i < len(joint_names):
+            ax.set_title('{:d} {}'.format(i, joint_names[i]), fontsize=10)
+        else:
+            ax.set_title('{:d}'.format(i), fontsize=10)
         sns.heatmap(hms[i], cbar=False, cmap='viridis',xticklabels=False,yticklabels=False, ax=ax)
     
     if img_res is not None:
@@ -95,15 +98,15 @@ def test_net(tester, input_pose, det_range, gpu_id):
             input_pose_valids = np.array(input_pose_valids)
             input_pose_scores = np.array(input_pose_scores)
             crop_infos = np.array(crop_infos)
-            
+
             # forward
-            coord, heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
+            coord, heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])
             #heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
             #print('-------', type(heatmaps))
             #print('=======', len(heatmaps), heatmaps[0].shape, heatmaps[1].shape)
             #np.savez('temp/imgs.npz', imgs=imgs, heatmaps=heatmaps[0], paf=heatmaps[1])
             #exit()
-            heatmaps=heatmaps[0]
+
             if cfg.flip_test:
                 flip_imgs = imgs[:, :, ::-1, :]
                 flip_input_pose_coords = input_pose_coords.copy()
@@ -143,7 +146,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
                     _tmpimg = tmpimg.copy()
                     _tmpimg = cfg.vis_keypoints(_tmpimg, tmpkps)
                     cv2.imwrite(osp.join(cfg.vis_dir, str(img_id) + '_output.jpg'), _tmpimg)
-                    save_mergedHeatmaps(heatmaps[image_id-start_id], osp.join(cfg.vis_dir, str(img_id) + '_hm.jpg'))
+                    # save_mergedHeatmaps(heatmaps[image_id-start_id], osp.join(cfg.vis_dir, str(img_id) + '_hm.jpg'))
                     img_id += 1
 
                 # map back to original images
@@ -232,12 +235,12 @@ def test(test_model):
         range = [ranges[gpu_id], ranges[gpu_id + 1]]
         return test_net(tester, input_pose, range, gpu_id)
         
-    func(0)
-    #MultiGPUFunc = MultiProc(len(args.gpu_ids.split(',')), func)
-    #result = MultiGPUFunc.work()
+    #func(0)
+    MultiGPUFunc = MultiProc(len(args.gpu_ids.split(',')), func)
+    result = MultiGPUFunc.work()
 
     # evaluation
-    # d.evaluation(result, annot, cfg.result_dir, cfg.testset)
+    d.evaluation(result, annot, cfg.result_dir, cfg.testset)
 
 if __name__ == '__main__':
     def parse_args():
