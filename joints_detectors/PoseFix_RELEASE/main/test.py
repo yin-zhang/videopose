@@ -145,7 +145,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
                     tmpkps = np.zeros((3,cfg.num_kps))
                     tmpkps[:2,:] = kps_result[image_id,:,:2].transpose(1,0)
                     tmpkps[2,:] = kps_result[image_id,:,2]
-                    print(tmpkps)
+
                     _tmpimg = tmpimg.copy()
                     _tmpimg = cfg.vis_keypoints(_tmpimg, tmpkps, kp_thresh=0.05)
                     cv2.imwrite(osp.join(cfg.vis_dir, str(img_id) + '_output.jpg'), _tmpimg)
