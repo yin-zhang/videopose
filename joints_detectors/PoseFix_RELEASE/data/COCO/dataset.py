@@ -29,21 +29,24 @@ class Dataset(object):
        .87, .89, .89]) / 10.0
     ignore_kps = []
 
-    test_on_trainset_path = osp.join('..', 'data/COCO/images/test2017/douyin_0/alpha_pose_coco.json')
-    # test_on_trainset_path = osp.join('..', 'data', dataset_name, 'input_pose', 'test_on_trainset', 'result.json')
+    '''
+    Training Configures
+    '''
+    # pose info predicted by pretrained pose network, like cpn, alpha pose.
+    test_on_trainset_path = osp.join('..', 'data', dataset_name, 'input_pose', 'test_on_trainset', 'result.json')
+
+    '''
+    Testing Configures
+    '''
     # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'person_keypoints_test-dev2017_Simple152_results.json') # set directory of the input pose
-    
-    # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'alphapose-results.json') # set directory of the input pose
-    # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'douyin_0_pose.json') # set directory of the input pose
     input_pose_path = osp.join('..', 'data/COCO/images/test2017/douyin_0/alphapose-results.json')
-    # img_path = osp.join('..', 'data', dataset_name, 'images')
-    img_path = osp.join('..', 'data', dataset_name, 'images/test2017')
-    
+
+
+    img_path = osp.join('..', 'data', dataset_name, 'images')
     train_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'person_keypoints_train2017.json')
     val_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'person_keypoints_val2017.json')
-    # test_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'image_info_test-dev2017.json')
-    test_annot_path = test_on_trainset_path
-
+    test_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'image_info_test-dev2017.json')
+    
     def load_train_data(self):
         coco = COCO(self.train_annot_path)
         train_data = []
@@ -95,7 +98,6 @@ class Dataset(object):
             coco = COCO(self.val_annot_path)
         elif db_set == 'test':
             coco = COCO(self.test_annot_path)
-            # coco = COCO(self.val_annot_path)
         else:
             print('Unknown db_set')
             assert 0
@@ -107,8 +109,7 @@ class Dataset(object):
 
     def imgid_to_imgname(self, annot, imgid, db_set):
         imgs = annot.loadImgs(imgid)
-        imgname = [i['file_name'] for i in imgs]
-        # imgname = [db_set + '2017/' + i['file_name'] for i in imgs]
+        imgname = [db_set + '2017/' + i['file_name'] for i in imgs]
         return imgname
     
     def input_pose_load(self, annot, db_set):

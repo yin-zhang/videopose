@@ -37,7 +37,7 @@ class Dataset(object):
     val_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'val2018.json')
     test_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'test2018.json')
     original_annot_path = osp.join('..', 'data', dataset_name, 'original_annotations')
-   
+    
     def load_train_data(self):
         coco = COCO(self.train_annot_path)
         train_data = []

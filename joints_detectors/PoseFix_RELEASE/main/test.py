@@ -103,11 +103,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
 
             # forward
             coord, heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])
-            #heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
-            #print('-------', type(heatmaps))
-            #print('=======', len(heatmaps), heatmaps[0].shape, heatmaps[1].shape)
             #np.savez('temp/imgs_{:d}_{:d}.npz'.format(record_id, batch_id), imgs=imgs, heatmaps=heatmaps)
-            #exit()
 
             if cfg.flip_test:
                 flip_imgs = imgs[:, :, ::-1, :]
@@ -212,10 +208,8 @@ def test(test_model):
     # annotation load
     d = Dataset()
     annot = d.load_annot(cfg.testset)
-    print('=================', type(annot))
     # input pose load
     input_pose = d.input_pose_load(annot, cfg.testset)
-    print('input_pose', len(input_pose))
     # job assign (multi-gpu)
     from tfflat.mp_utils import MultiProc
     img_start = 0
@@ -238,7 +232,6 @@ def test(test_model):
         range = [ranges[gpu_id], ranges[gpu_id + 1]]
         return test_net(tester, input_pose, range, gpu_id)
         
-    #func(0)
     MultiGPUFunc = MultiProc(len(args.gpu_ids.split(',')), func)
     result = MultiGPUFunc.work()
 
