@@ -60,7 +60,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
     pbar = tqdm(total=det_range[1] - img_start - 1, position=gpu_id)
     pbar.set_description("GPU %s" % str(gpu_id))
     while img_start < det_range[1]:
-        
+        record_id = img_start
         img_end = img_start + 1
         im_info = input_pose[img_start]
         while img_end < det_range[1] and input_pose[img_end]['image_id'] == im_info['image_id']:
@@ -86,6 +86,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
             input_pose_valids = []
             input_pose_scores = []
             crop_infos = []
+
             for i in range(start_id, end_id):
                 img, input_pose_coord, input_pose_valid, input_pose_score, crop_info = generate_batch(cropped_data[i], stage='test')
                 imgs.append(img)
@@ -93,6 +94,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
                 input_pose_valids.append(input_pose_valid)
                 input_pose_scores.append(input_pose_score)
                 crop_infos.append(crop_info)
+
             imgs = np.array(imgs)
             input_pose_coords = np.array(input_pose_coords)
             input_pose_valids = np.array(input_pose_valids)
@@ -104,7 +106,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
             #heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])[0]
             #print('-------', type(heatmaps))
             #print('=======', len(heatmaps), heatmaps[0].shape, heatmaps[1].shape)
-            #np.savez('temp/imgs.npz', imgs=imgs, heatmaps=heatmaps[0], paf=heatmaps[1])
+            #np.savez('temp/imgs_{:d}_{:d}.npz'.format(record_id, batch_id), imgs=imgs, heatmaps=heatmaps)
             #exit()
 
             if cfg.flip_test:
@@ -143,8 +145,9 @@ def test_net(tester, input_pose, det_range, gpu_id):
                     tmpkps = np.zeros((3,cfg.num_kps))
                     tmpkps[:2,:] = kps_result[image_id,:,:2].transpose(1,0)
                     tmpkps[2,:] = kps_result[image_id,:,2]
+                    print(tmpkps)
                     _tmpimg = tmpimg.copy()
-                    _tmpimg = cfg.vis_keypoints(_tmpimg, tmpkps)
+                    _tmpimg = cfg.vis_keypoints(_tmpimg, tmpkps, kp_thresh=0.05)
                     cv2.imwrite(osp.join(cfg.vis_dir, str(img_id) + '_output.jpg'), _tmpimg)
                     # save_mergedHeatmaps(heatmaps[image_id-start_id], osp.join(cfg.vis_dir, str(img_id) + '_hm.jpg'))
                     img_id += 1
@@ -186,7 +189,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
         score_result = np.copy(kps_result[:, :, 2])
         kps_result[:, :, 2] = 1
         kps_result = kps_result.reshape(-1,cfg.num_kps*3)
-        
+
         # save result
         for i in range(len(kps_result)):
             if cfg.dataset == 'COCO':
