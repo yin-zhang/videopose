@@ -648,7 +648,8 @@ class Tester(Base):
                         p_sum = 0
                         p_count = 0
                         for lm in range(num_inter):
-                            direct = paf[:, mY[lm], mX[lm]]                            
+                            direct = paf[:, mY[lm], mX[lm]]
+                            direct = direct / np.linalg.norm(direct)
                             score = vec[0] * direct[0] + vec[1] * direct[1]
                             if score > 0.05:
                                 p_sum += score
@@ -657,9 +658,8 @@ class Tester(Base):
                         if p_count == 0:
                             continue
 
-                        suc_ratio = p_count / num_inter
+                        suc_ratio = p_count * 1.0 / num_inter
                         mid_score = p_sum / p_count + min(height/vecNorm-1, 0)
-
                         if mid_score > 0 and suc_ratio > 0.8:
                             score = mid_score
                             vec_cand.append((i, j, score))
@@ -693,26 +693,27 @@ class Tester(Base):
                     data[-2] = connectionK[i][2] + hm_score_indexA + hm_score_indexB
                     return data
                 
-                if line_idx == 0 or len(subset) == 0 or (not lower_part and line_idx in [5, 7]):
+                if line_idx == 0 or len(subset) == 0:
                     for i in range(len(connectionK)):
                         subset.append(gen_data(i))
                 elif line_idx in [5, 7]:
                     for i in range(len(subset)):
-                        add_joint = False
-                        if subset[i][indexA] < 0:
-                            hm_score_indexA = can_val_list[indexA][connectionK[i][0]]
-                            subset[i][indexA] = connectionK[i][0]
-                            subset[i][-1] += 1
-                            subset[i][-2] += hm_score_indexA
-                            add_joint = True
-                        if subset[i][indexB] < 0:
-                            hm_score_indexB = can_val_list[indexB][connectionK[i][1]]
-                            subset[i][indexB] = connectionK[i][1]
-                            subset[i][-1] += 1
-                            subset[i][-2] += hm_score_indexB
-                            add_joint = True
-                        if add_joint:
-                            subset[i][-2] += connectionK[i][2]
+                        for j in range(len(connectionK)):
+                            add_joint = False
+                            if subset[i][indexA] < 0:
+                                hm_score_indexA = can_val_list[indexA][connectionK[j][0]]
+                                subset[i][indexA] = connectionK[j][0]
+                                subset[i][-1] += 1
+                                subset[i][-2] += hm_score_indexA
+                                add_joint = True
+                            if subset[i][indexB] < 0:
+                                hm_score_indexB = can_val_list[indexB][connectionK[j][1]]
+                                subset[i][indexB] = connectionK[j][1]
+                                subset[i][-1] += 1
+                                subset[i][-2] += hm_score_indexB
+                                add_joint = True
+                            if add_joint:
+                                subset[i][-2] += connectionK[j][2]
                 else:
                     for i in range(len(connectionK)):
                         num = 0
@@ -729,7 +730,7 @@ class Tester(Base):
         for i in reversed(range(len(subset))):
             if subset[i][-1] < 3 or subset[i][-2] / subset[i][-1] < 0.2:
                 del subset[i]
-        
+
         max_idx = 0
         max_sco = 0
         for i in range(len(subset)):
@@ -749,6 +750,7 @@ class Tester(Base):
         output_hm = []
         for i in range(len(heatmap_outs)):
             output_hm.append(self.extract_coordinate_paf_one(heatmap_outs[i], paf_outs[i]))
+        
         return output_hm
 
     def next_feed(self, batch_data=None):
