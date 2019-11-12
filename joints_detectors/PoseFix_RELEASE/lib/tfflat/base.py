@@ -692,7 +692,7 @@ class Tester(Base):
                     data[-1] = 2
                     data[-2] = connectionK[i][2] + hm_score_indexA + hm_score_indexB
                     return data
-                
+
                 if line_idx == 0 or len(subset) == 0:
                     for i in range(len(connectionK)):
                         subset.append(gen_data(i))
@@ -724,12 +724,21 @@ class Tester(Base):
                                 subset[j][indexB] = connectionK[i][1]
                                 subset[j][-1] += 1
                                 subset[j][-2] += hm_score_indexB + connectionK[i][2]
+                            elif subset[j][indexB] == connectionK[i][1]:
+                                num += 1
+                                hm_score_indexA = can_val_list[indexA][connectionK[i][0]]
+                                subset[j][indexA] = connectionK[i][0]
+                                subset[j][-1] += 1
+                                subset[j][-2] += hm_score_indexA + connectionK[i][2]
+
                         if num == 0:
                             subset.append(gen_data(i))
                                 
         for i in reversed(range(len(subset))):
             if subset[i][-1] < 3 or subset[i][-2] / subset[i][-1] < 0.2:
                 del subset[i]
+
+        
 
         max_idx = 0
         max_sco = 0
@@ -738,11 +747,17 @@ class Tester(Base):
                 max_sco = subset[i][-1]
                 max_idx = i
 
-        pose = np.ones([len(heatmap_outs), 2], dtype=np.float32) * -1
+        pose = np.zeros([len(heatmap_outs), 2], dtype=np.float32)
+        for i in range(len(can_idx_list)):
+            idx = np.argmax(can_val_list[i])
+            pose[i][0] = can_idx_list[i][idx][0] / width * self.cfg.input_shape[1]
+            pose[i][1] = can_idx_list[i][idx][1] / height * self.cfg.input_shape[0]
+
         for j in range(len(can_idx_list)):
             if len(can_idx_list[j]) > 0 and len(subset) > 0 and subset[max_idx][j] >= 0:
                 pose[j][0] = can_idx_list[j][subset[max_idx][j]][0] / width * self.cfg.input_shape[1]
                 pose[j][1] = can_idx_list[j][subset[max_idx][j]][1] / height * self.cfg.input_shape[0]
+
         return pose
 
     def extract_coordinate_paf(self, heatmap_outs, paf_outs):
