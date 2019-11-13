@@ -59,6 +59,7 @@ def test_net(tester, input_pose, det_range, gpu_id):
     img_id2 = 0
     pbar = tqdm(total=det_range[1] - img_start - 1, position=gpu_id)
     pbar.set_description("GPU %s" % str(gpu_id))
+    test_count = 0
     while img_start < det_range[1]:
         record_id = img_start
         img_end = img_start + 1
@@ -100,10 +101,14 @@ def test_net(tester, input_pose, det_range, gpu_id):
             input_pose_valids = np.array(input_pose_valids)
             input_pose_scores = np.array(input_pose_scores)
             crop_infos = np.array(crop_infos)
+            if test_count < 2100: 
+                test_count += imgs.shape[0]
+                continue
+            test_count += imgs.shape[0]
 
             # forward
             coord, heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])
-            #np.savez('temp/imgs_{:d}_{:d}.npz'.format(record_id, batch_id), imgs=imgs, heatmaps=heatmaps)
+            np.savez('temp/imgs_{:d}_{:d}.npz'.format(record_id, batch_id), imgs=imgs, heatmaps=heatmaps, coord=coord)
 
             if cfg.flip_test:
                 flip_imgs = imgs[:, :, ::-1, :]
@@ -203,12 +208,31 @@ def test_net(tester, input_pose, det_range, gpu_id):
     return dump_results
 
 
+def get_eval_json(input_pose):
+    for i in range(len(input_pose)):
+        print(input_pose[i])
+        kps = input_pose[i]['keypoints']
+        kps2 = []
+        scores = []
+        num = len(kps) // 3
+        for j in range(num):
+            kps2.append(kps[i*3])
+            kps2.append(kps[i*3+1])
+            scores.append(kps[i*3+2])
+        input_pose[i]['keypoints'] = kps2
+        input_pose[i]['score'] = scores
+    return input_pose
+
+
 def test(test_model):
     
     # annotation load
     d = Dataset()
     annot = d.load_annot(cfg.testset)
     # input pose load
+    #input_pose = d.coco_pose_load(annot)
+    #d.evaluation(input_pose, annot, cfg.result_dir, cfg.testset)
+
     input_pose = d.input_pose_load(annot, cfg.testset)
     # job assign (multi-gpu)
     from tfflat.mp_utils import MultiProc
@@ -234,7 +258,7 @@ def test(test_model):
         
     MultiGPUFunc = MultiProc(len(args.gpu_ids.split(',')), func)
     result = MultiGPUFunc.work()
-
+    # func(0)
     # evaluation
     d.evaluation(result, annot, cfg.result_dir, cfg.testset)
 

@@ -711,7 +711,9 @@ class Tester(Base):
             joint_list[-1] += max_pose[-1]
 
         out_pose = np.zeros([len(heatmap_outs), 2], dtype=np.float32)
+
         for i in range(len(can_idx_list)):
+            if can_val_list[i].size == 0: continue
             idx = np.argmax(can_val_list[i])
             out_pose[i][0] = can_idx_list[i][idx][0] / width * self.cfg.input_shape[1]
             out_pose[i][1] = can_idx_list[i][idx][1] / height * self.cfg.input_shape[0]
@@ -810,7 +812,6 @@ class Tester(Base):
         self.gpu_timer.tic()
         res = self.sess.run([*self.graph_ops, *self.summary_dict.values()], feed_dict=feed_dict)
         self.gpu_timer.toc()
-        res_heatmaps = []
 
         if self.cfg.add_paf:
             heatmap_outs = res[0][0]
@@ -823,11 +824,8 @@ class Tester(Base):
             return coord_outs, np.concatenate([heatmap_outs, paf_outs], axis=1)
 
         else:
-            if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:
-                for i in range(len(res)):
-                    res[i] = res[i][:len(data[0])]
-                    res_heatmaps.append(res[i][-len(data[0]):])
-            return res, res_heatmaps
+            #if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:
+            return res[0][0], res[1][0]
 
     def test(self):
         pass

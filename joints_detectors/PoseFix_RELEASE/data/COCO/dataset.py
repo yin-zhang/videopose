@@ -39,13 +39,17 @@ class Dataset(object):
     Testing Configures
     '''
     # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'person_keypoints_test-dev2017_Simple152_results.json') # set directory of the input pose
-    input_pose_path = osp.join('..', 'data/COCO/images/test2017/douyin_0/alphapose-results.json')
+    # input_pose_path = osp.join('..', 'data/COCO/images/test2017/douyin_0/alphapose-results.json')
+    input_pose_path = osp.join('..', 'data/COCO/images/test2017/s_05_act_10_subact_01_ca_01_out/alphapose-results.json')
+    
+    # input_pose_path = test_on_trainset_path
 
 
     img_path = osp.join('..', 'data', dataset_name, 'images')
     train_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'person_keypoints_train2017.json')
     val_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'person_keypoints_val2017.json')
-    test_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'image_info_test-dev2017.json')
+    # test_annot_path = osp.join('..', 'data', dataset_name, 'annotations', 'image_info_test-dev2017.json')
+    test_annot_path = osp.join('..', 'data/COCO/images/test2017/s_05_act_10_subact_01_ca_01_out/coco.json')
     
     def load_train_data(self):
         coco = COCO(self.train_annot_path)
@@ -112,6 +116,21 @@ class Dataset(object):
         imgname = [db_set + '2017/' + i['file_name'] for i in imgs]
         return imgname
     
+    def coco_pose_load(self, annot):
+        gt_img_id = self.load_imgid(annot)
+        with open(self.input_pose_path, 'r') as f:
+            input_pose = json.load(f)
+            for pose in input_pose:
+                if isinstance(pose['image_id'], str):
+                    pose['image_id'] = int(pose['image_id'].split('.')[0])
+
+        input_pose = [i for i in input_pose if i['image_id'] in gt_img_id]
+        input_pose = [i for i in input_pose if i['category_id'] == 1]
+        input_pose = [i for i in input_pose if i['score'] > 0]
+
+        input_pose.sort(key=lambda x: (x['image_id'], x['score']), reverse=True)
+        return input_pose
+
     def input_pose_load(self, annot, db_set):
         
         gt_img_id = self.load_imgid(annot)

@@ -278,7 +278,7 @@ def parse_args():
     parser.add_argument('-i', '--input', type=str, help='input file path')
     parser.add_argument('--detect-box-path', type=str, help='bounding box npz file outputed by gen_train_bbox.py')
     parser.add_argument('--gt-joint-path', type=str, help='joints groundtruth file path')
-    parser.add_argument('-m', '--mode', type=str, help='mode, h36m2h5|merge_box_gt|box2eval|merge_boxes|rearrange_h5|check_pose')
+    parser.add_argument('-m', '--mode', type=str, help='mode, h36m2h5|merge_box_gt|box2eval|merge_boxes|rearrange_h5|cvt_coco|check_pose')
     parser.add_argument('-d', '--dir', type=str, help='data directory')
     return parser.parse_args()
 
