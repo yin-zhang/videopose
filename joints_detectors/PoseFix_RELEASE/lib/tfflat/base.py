@@ -662,23 +662,41 @@ class Tester(Base):
         
         # split candidates to unlinked clusters
         topo_list = []
+        graph = {}
+        for lidx in line_cand.keys():
+            jA, jB = self.cfg.kps_lines[lidx]
+            if jA in graph:
+                graph[jA].add(jB)
+            else:
+                graph[jA] = {jB}
+            
+            if jB in graph:
+                graph[jB].add(jA)
+            else:
+                graph[jB] = {jA}
+            
+        for j in graph.keys():
+            topo_set = set()
+            que = [j]
+            while len(que) > 0:
+                topo_set.add(que[0])
+                for i in graph[que[0]]:
+                    if i not in topo_set:
+                        que.append(i)
+                del que[0]
+            topo_list.append({'set':topo_set, 'idx':[], 'vec':[]})
+
         while(len(line_cand) > 0):
             lidx, vec_cand = list(line_cand.items())[0]
             del line_cand[lidx]
 
             jA, jB = self.cfg.kps_lines[lidx]
-            found = False
             for item in topo_list:    
                 if jA in item['set'] or jB in item['set']: # linked
-                    found = True
                     item['idx'].append(lidx)
                     item['vec'].append(vec_cand)
-                    item['set'].add(jA)
-                    item['set'].add(jB)
-                    break
-            
-            if not found:
-                topo_list.append({'set':{jA, jB}, 'idx':[lidx], 'vec':[vec_cand]})        
+                    break        
+
         def find_max_score(idx_list, vec_list, start, pose):
             if start == len(idx_list):
                 return pose.copy()
