@@ -598,9 +598,11 @@ class Tester(Base):
             can_val_list.append(peak_val)
 
         height, width = heatmap_outs[0].shape[0], heatmap_outs[0].shape[1]
-        subset_size = len(heatmap_outs) + 2
-        subset = []
-        lower_part = False
+        joint_list_size = len(heatmap_outs) + 1
+        joint_list = [-1] * joint_list_size
+        joint_list[-1] = 0
+
+        line_cand = {}
         for line_idx in range(len(self.cfg.kps_lines)):
             indexA, indexB = self.cfg.kps_lines[line_idx]
             candA = can_idx_list[indexA]
@@ -608,157 +610,117 @@ class Tester(Base):
             nA = candA.shape[0]
             nB = candB.shape[0]
             
-            if nA == 0 or nB == 0:
-                if nA == 0:
-                    for i in range(nB):
-                        num = False
-                        for j in range(len(subset)):
-                            if subset[j][indexB] == i:
-                                num = True
-                                break
-                        if not num:
-                            subset.append([-1]*subset_size)
-                            subset[-1][indexB] = i
-                            subset[-1][-1] = 1
-                            subset[-1][-2] = can_val_list[indexB][i]
-                else:
-                    for i in range(nA):
-                        num = False
-                        for j in range(len(subset)):
-                            if subset[j][indexA] == i:
-                                num = True
-                                break
-                        if not num:
-                            subset.append([-1]*subset_size)
-                            subset[-1][indexA] = i
-                            subset[-1][-1] = 1
-                            subset[-1][-2] = can_val_list[indexA][i]
+            vec_cand = []
+            paf = paf_outs[line_idx*2:line_idx*2+2]
+
+            for i in range(nA):
+                for j in range(nB):
+                    vec = candB[j] - candA[i]
+                    vecNorm = np.linalg.norm(vec)
+                    vec = vec / (vecNorm + 1e-6)
+
+                    num_inter = 10
+                    mX = np.round(np.linspace(candA[i][0], candB[j][0], num_inter)).astype(np.int32)
+                    mY = np.round(np.linspace(candA[i][1], candB[j][1], num_inter)).astype(np.int32)
+
+                    p_sum = 0
+                    p_count = 0
+                    for lm in range(num_inter):
+                        direct = paf[:, mY[lm], mX[lm]]
+                        score = vec[0] * direct[0] + vec[1] * direct[1]
+                        if score > 0.05:
+                            p_sum += score
+                            p_count += 1
+
+                    suc_ratio = p_count * 1.0 / num_inter
+                    mid_score = p_sum / p_count if p_count > 0 else 0
+                    score = mid_score + can_val_list[indexA][i] * 0.1 + can_val_list[indexB][j] * 0.1
+                    vec_cand.append([i, j, score])
+            
+            if nA == 1 and nB == 1: 
+                # certain point
+                if joint_list[indexA] < 0:
+                    joint_list[indexA] = 0
+                if joint_list[indexB] < 0:
+                    joint_list[indexB] = 0
+                joint_list[-1] += vec_cand[-1][-1]
+            elif nA == 1 and nB == 0:
+                # single point
+                if joint_list[indexA] < 0:
+                    joint_list[indexA] = 0
+                joint_list[-1] += can_val_list[indexA][0] * 0.1
+            elif nA == 0 and nB == 1:
+                # single point
+                if joint_list[indexB] < 0:
+                    joint_list[indexB] =0
+                joint_list[-1] += can_val_list[indexB][0] * 0.1
+            elif len(vec_cand) > 0:
+                assert len(vec_cand) > 1
+                line_cand[line_idx] = vec_cand
             else:
-                vec_cand = []
-                paf = paf_outs[line_idx*2:line_idx*2+2]
-                for i in range(nA):
-                    for j in range(nB):
-                        vec = candB[j] - candA[i] 
-                        vecNorm = np.linalg.norm(vec)
-                        vec = vec / (vecNorm + 1e-6)
-
-                        num_inter = 10
-                        mX = np.round(np.linspace(candA[i][0], candB[j][0], num_inter)).astype(np.int32)
-                        mY = np.round(np.linspace(candA[i][1], candB[j][1], num_inter)).astype(np.int32)
-                        p_sum = 0
-                        p_count = 0
-                        for lm in range(num_inter):
-                            direct = paf[:, mY[lm], mX[lm]]
-                            direct = direct / np.linalg.norm(direct)
-                            score = vec[0] * direct[0] + vec[1] * direct[1]
-                            if score > 0.05:
-                                p_sum += score
-                                p_count += 1
-
-                        if p_count == 0:
-                            continue
-
-                        suc_ratio = p_count * 1.0 / num_inter
-                        mid_score = p_sum / p_count + min(height/vecNorm-1, 0)
-                        if mid_score > 0 and suc_ratio > 0.8:
-                            score = mid_score
-                            vec_cand.append((i, j, score))
-
-                if len(vec_cand) > 0:
-                    vec_cand = np.array(vec_cand, dtype=[('x',int), ('y',int), ('score', float)])
-                    vec_cand = np.sort(vec_cand, order='score')[::-1]
-
-                connectionK = []
-                occurA = [0] * nA
-                occurB = [0] * nB
-                counter = 0
-                for row in range(len(vec_cand)):
-                    x,y,score = vec_cand[row]
-                    
-                    if occurA[x] == 0 and occurB[y] == 0:
-                        connectionK.append((x, y, score))
-                        counter += 1
-                        if counter == min(nA, nB):
-                            break
-                        occurA[x] = 1
-                        occurB[y] = 1
-
-                def gen_data(i):
-                    hm_score_indexA = can_val_list[indexA][connectionK[i][0]]
-                    hm_score_indexB = can_val_list[indexB][connectionK[i][1]]
-                    data = [-1] * subset_size
-                    data[indexA] = connectionK[i][0]
-                    data[indexB] = connectionK[i][1]
-                    data[-1] = 2
-                    data[-2] = connectionK[i][2] + hm_score_indexA + hm_score_indexB
-                    return data
-
-                if line_idx == 0 or len(subset) == 0:
-                    for i in range(len(connectionK)):
-                        subset.append(gen_data(i))
-                elif line_idx in [5, 7]:
-                    for i in range(len(subset)):
-                        for j in range(len(connectionK)):
-                            add_joint = False
-                            if subset[i][indexA] < 0:
-                                hm_score_indexA = can_val_list[indexA][connectionK[j][0]]
-                                subset[i][indexA] = connectionK[j][0]
-                                subset[i][-1] += 1
-                                subset[i][-2] += hm_score_indexA
-                                add_joint = True
-                            if subset[i][indexB] < 0:
-                                hm_score_indexB = can_val_list[indexB][connectionK[j][1]]
-                                subset[i][indexB] = connectionK[j][1]
-                                subset[i][-1] += 1
-                                subset[i][-2] += hm_score_indexB
-                                add_joint = True
-                            if add_joint:
-                                subset[i][-2] += connectionK[j][2]
-                else:
-                    for i in range(len(connectionK)):
-                        num = 0
-                        for j in range(len(subset)):
-                            if subset[j][indexA] == connectionK[i][0]:
-                                num += 1
-                                hm_score_indexB = can_val_list[indexB][connectionK[i][1]]
-                                subset[j][indexB] = connectionK[i][1]
-                                subset[j][-1] += 1
-                                subset[j][-2] += hm_score_indexB + connectionK[i][2]
-                            elif subset[j][indexB] == connectionK[i][1]:
-                                num += 1
-                                hm_score_indexA = can_val_list[indexA][connectionK[i][0]]
-                                subset[j][indexA] = connectionK[i][0]
-                                subset[j][-1] += 1
-                                subset[j][-2] += hm_score_indexA + connectionK[i][2]
-
-                        if num == 0:
-                            subset.append(gen_data(i))
-                                
-        for i in reversed(range(len(subset))):
-            if subset[i][-1] < 3 or subset[i][-2] / subset[i][-1] < 0.2:
-                del subset[i]
-
+                print('Warning: not found valid line_{:d} candidate'.format(line_idx))
         
+        # split candidates to unlinked clusters
+        topo_list = []
+        while(len(line_cand) > 0):
+            lidx, vec_cand = list(line_cand.items())[0]
+            del line_cand[lidx]
 
-        max_idx = 0
-        max_sco = 0
-        for i in range(len(subset)):
-            if max_sco < subset[i][-1]:
-                max_sco = subset[i][-1]
-                max_idx = i
+            jA, jB = self.cfg.kps_lines[lidx]
+            found = False
+            for item in topo_list:    
+                if jA in item['set'] or jB in item['set']: # linked
+                    found = True
+                    item['idx'].append(lidx)
+                    item['vec'].append(vec_cand)
+                    item['set'].add(jA)
+                    item['set'].add(jB)
+                    break
+            
+            if not found:
+                topo_list.append({'set':{jA, jB}, 'idx':[lidx], 'vec':[vec_cand]})        
+        def find_max_score(idx_list, vec_list, start, pose):
+            if start == len(idx_list):
+                return pose.copy()
 
-        pose = np.zeros([len(heatmap_outs), 2], dtype=np.float32)
+            jA, jB = self.cfg.kps_lines[idx_list[start]]        
+            pA, pB, ps = pose[jA], pose[jB], pose[-1]
+
+            max_pose = None
+            vec = vec_list[start]
+            for i in range(len(vec)):
+                ci, cj, cs = vec[i]
+                if (pA >= 0 and pA != ci) or (pB >= 0 and pB != cj): continue
+                assert (pA < 0 and pB < 0) or pA == ci or pB == cj, 'ci:{:d} cj:{:d} pA:{:d} pB:{:d}'.format(ci, cj, pA, pB)
+                pose[jA], pose[jB] = ci, cj            
+                pose[-1] = ps + cs
+                curr_pose = find_max_score(idx_list, vec_list, start + 1, pose)
+                max_pose = curr_pose if max_pose is None or max_pose[-1] < curr_pose[-1] else max_pose
+                pose[jA], pose[jB], pose[-1] = pA, pB, ps
+            
+            return max_pose
+
+        for item in topo_list:
+            pose = [-1] * joint_list_size
+            pose[-1] = 0
+            max_pose = find_max_score(item['idx'], item['vec'], 0, pose)
+            for i in range(len(max_pose)-1):
+                assert max_pose[i] < 0 or (max_pose[i] >= 0 and (joint_list[i] < 0 or max_pose[i] == joint_list[i])), 'max pose:{} joint_list:{}'.format(max_pose, joint_list)
+                if max_pose[i] >= 0:
+                    joint_list[i] = max_pose[i]
+            joint_list[-1] += max_pose[-1]
+
+        out_pose = np.zeros([len(heatmap_outs), 2], dtype=np.float32)
         for i in range(len(can_idx_list)):
             idx = np.argmax(can_val_list[i])
-            pose[i][0] = can_idx_list[i][idx][0] / width * self.cfg.input_shape[1]
-            pose[i][1] = can_idx_list[i][idx][1] / height * self.cfg.input_shape[0]
-
+            out_pose[i][0] = can_idx_list[i][idx][0] / width * self.cfg.input_shape[1]
+            out_pose[i][1] = can_idx_list[i][idx][1] / height * self.cfg.input_shape[0]
+        
         for j in range(len(can_idx_list)):
-            if len(can_idx_list[j]) > 0 and len(subset) > 0 and subset[max_idx][j] >= 0:
-                pose[j][0] = can_idx_list[j][subset[max_idx][j]][0] / width * self.cfg.input_shape[1]
-                pose[j][1] = can_idx_list[j][subset[max_idx][j]][1] / height * self.cfg.input_shape[0]
-
-        return pose
+            out_pose[j][0] = can_idx_list[j][joint_list[j]][0] / width * self.cfg.input_shape[1]
+            out_pose[j][1] = can_idx_list[j][joint_list[j]][1] / height * self.cfg.input_shape[0]
+        
+        return out_pose
 
     def extract_coordinate_paf(self, heatmap_outs, paf_outs):
         assert len(heatmap_outs) == len(paf_outs), 'heatmap count: {}, paf count:'.format(heatmap_outs.shape, paf_outs.shape)
