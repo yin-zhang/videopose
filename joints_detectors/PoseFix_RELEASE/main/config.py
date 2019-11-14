@@ -7,7 +7,7 @@ class Config:
     
     ## dataset
     dataset = 'COCO' # 'COCO', 'PoseTrack', 'MPII'
-    testset = 'test' # train, test, val (there is no validation set for MPII)
+    testset = 'train' # train, test, val (there is no validation set for MPII)
 
     ## directory
     cur_dir = osp.dirname(os.path.abspath(__file__))

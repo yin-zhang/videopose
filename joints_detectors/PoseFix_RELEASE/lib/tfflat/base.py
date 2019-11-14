@@ -265,7 +265,7 @@ class Trainer(Base):
             for data in test_on_trainset:
                 if isinstance(data['image_id'], str):
                     data['image_id'] = int(data['image_id'].split('.')[0])
-        
+
         # sort list by img_id
         train_data = sorted(train_data, key=lambda k: k['image_id']) 
         test_on_trainset = sorted(test_on_trainset, key=lambda k: k['image_id'])
@@ -341,11 +341,6 @@ class Trainer(Base):
             
             bbox_out_per_img = np.zeros((len(data_out[i]),4))
             joint_out_per_img = np.zeros((len(data_out[i]),self.cfg.num_kps*3))
-            #print(len(data_gt[i]), len(data_out[i]))
-            #if len(data_gt[i]) != len(data_out[i]):
-            #    print(data_gt[i])
-            #    print(data_out[i])
-            # assert len(data_gt[i]) == len(data_out[i])
             
             # for each data_out in an img
             for j in range(len(data_out[i])):
@@ -666,8 +661,8 @@ class Tester(Base):
             elif len(vec_cand) > 0:
                 assert len(vec_cand) > 1
                 line_cand[line_idx] = vec_cand
-            else:
-                print('Warning: not found valid line_{:d} candidate'.format(line_idx))
+            #else:
+            #    print('Warning: not found valid line_{:d} candidate'.format(line_idx))
         
         # split candidates to unlinked clusters
         topo_list = []
@@ -746,6 +741,7 @@ class Tester(Base):
             out_pose[i][1] = can_idx_list[i][idx][1] / height * self.cfg.input_shape[0]
         
         for j in range(len(can_idx_list)):
+            if joint_list[j] < 0: continue
             out_pose[j][0] = can_idx_list[j][joint_list[j]][0] / width * self.cfg.input_shape[1]
             out_pose[j][1] = can_idx_list[j][joint_list[j]][1] / height * self.cfg.input_shape[0]
         
