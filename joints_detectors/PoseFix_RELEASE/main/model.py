@@ -177,17 +177,18 @@ class Model(ModelDesc):
             if add_paf_loss:
                 gt_heatmap = tf.stop_gradient(self.render_gaussian_heatmap(target_coord, cfg.output_shape, 1) / 255.0)
                 valid_mask = tf.reshape(target_valid, [cfg.batch_size, 1, 1, cfg.num_kps])
-                hm_diff = (gt_heatmap - heatmap_outs) * valid_mask
-                hm_diff = tf.reshape(hm_diff, [cfg.batch_size, -1])
-                hm_diff = tf.reduce_sum(tf.square(hm_diff), axis=1) + tf.to_float(1e-16)
-                hm_diff = tf.sqrt(hm_diff)
+                hm_diff = tf.square((gt_heatmap - heatmap_outs) * valid_mask)
+                hm_diff = tf.transpose(hm_diff, [0, 3, 1, 2])
+                hm_diff = tf.reshape(hm_diff, [cfg.batch_size, cfg.num_kps, -1])
+                hm_diff = tf.sqrt(tf.reduce_sum(hm_diff, axis=2) + tf.to_float(1e-16))
                 loss_hm = tf.reduce_mean(hm_diff)
                 
-                paf_diff = (target_paf - paf_outs) * target_paf_valid
-                paf_diff = tf.reshape(paf_diff, [cfg.batch_size, -1])
-                paf_diff = tf.reduce_sum(tf.square(paf_diff), axis=1) + tf.to_float(1e-16)
-                paf_diff = tf.sqrt(paf_diff)
+                paf_diff = tf.square((target_paf - paf_outs) * target_paf_valid)
+                paf_diff = tf.transpose(paf_diff, [0, 3, 1, 2])
+                paf_diff = tf.reshape(paf_diff, [cfg.batch_size, len(cfg.kps_lines)*2, -1])
+                paf_diff = tf.sqrt(tf.reduce_sum(paf_diff, axis=2) + tf.to_float(1e-16))                
                 loss_paf = tf.reduce_mean(paf_diff)
+                
                 loss = loss_hm + loss_paf
 
                 self.add_tower_summary('loss_h', loss_hm)
