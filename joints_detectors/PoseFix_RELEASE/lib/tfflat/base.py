@@ -586,6 +586,15 @@ class Tester(Base):
                     sum_y += ty * score
             peak_idx[0,i] = sum_y / sum_score
             peak_idx[1,i] = sum_x / sum_score
+        
+        if peak_val.shape[0] > 0:
+            peak_sel = []
+            maxval = np.max(peak_val)
+            for i in range(peak_val.shape[0]):
+                if peak_val[i] > maxval * 0.5:
+                    peak_sel.append(i)
+            peak_idx = peak_idx[:, peak_sel]
+            peak_val = peak_val[peak_sel]
 
         return peak_idx[::-1,:].T, peak_val
 
