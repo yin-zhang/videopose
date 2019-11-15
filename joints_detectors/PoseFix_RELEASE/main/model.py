@@ -14,15 +14,63 @@ resnet_arg_scope = partial(resnet_arg_scope, bn_trainable=cfg.bn_train)
 
 class Model(ModelDesc):
     
-    def head_net(self, blocks, is_training, trainable=True, add_paf_output=False):
+    def non_local_block(self, input_x, out_channels, sub_sample=True, is_bn=True, scope='NonLocalBlock'):
+        batch_size, height, width, channels = input_x.get_shape().as_list()
+        with tf.variable_scope(scope):
+            with tf.variable_scope('g'):
+                g = slim.conv2d(input_x, out_channels, [1,1], stride=1, scope='g')
+                if sub_sample:
+                    g = slim.max_pool2d(g, [2,2], stride=2, scope='g_max_pool')
+            
+            with tf.variable_scope('phi'):
+                phi = slim.conv2d(input_x, out_channels, [1,1], stride=1, scope='phi')
+                if sub_sample:
+                    phi = slim.max_pool2d(phi, [2,2], stride=2, scope='phi_max_pool')
+            
+            with tf.variable_scope('theta'):
+                theta = slim.conv2d(input_x, out_channels, [1,1], stride=1, scope='theta')
+
+            g_x = tf.reshape(g, [batch_size, -1, out_channels])
+            g_x = tf.transpose(g_x, [0,2,1])
+
+            theta_x = tf.reshape(theta, [batch_size, -1, 1, out_channels])
+            phi_x = tf.reshape(phi, [batch_size, 1, -1, out_channels])
+
+            w = theta_x.get_shape()[2]
+            h = phi_x.get_shape()[1]
+
+            theta_x = tf.tile(theta_x, [1, h, 1, 1])
+            phi_x = tf.tile(phi_x, [1, 1, w, 1])
+
+            concat_feat = tf.concat([theta_x, phi_x], 3)
+            with tf.variable_scope('concat_feat'):                
+                f = slim.conv2d(concat_feat, 1, [1,1], stride=1, activation_fn=tf.nn.relu, scope='concat_conv')
+            f = tf.reshape(f, [batch_size, h, w])
+            f_div_C = f / w
+            
+            y = tf.matmul(g_x, f_div_C)
+            y = tf.transpose(y, [0,2,3,1])
+
+            with tf.variable_scope('w'):
+                w_y = slim.conv2d(y, out_channels, [1,1], stride=1, scope='w')
+                if is_bn:
+                    w_y = slim.batch_norm(w_y)
+            
+            z = input_x + w_y
+            return z
+
+    def head_net(self, blocks, is_training, trainable=True, add_paf_output=False, add_nonlocal_block=False):
         
         normal_initializer = tf.truncated_normal_initializer(0, 0.01)
         msra_initializer = tf.contrib.layers.variance_scaling_initializer()
         xavier_initializer = tf.contrib.layers.xavier_initializer()
         
         with slim.arg_scope(resnet_arg_scope(bn_is_training=is_training)):
-            
-            out = slim.conv2d_transpose(blocks[-1], 256, [4, 4], stride=2,
+            if add_nonlocal_block:
+                out = self.non_local_block(blocks[-1], 256)
+            else:
+                out = blocks[-1]
+            out = slim.conv2d_transpose(out, 256, [4, 4], stride=2,
                 trainable=trainable, weights_initializer=normal_initializer,
                 padding='SAME', activation_fn=tf.nn.relu,
                 scope='up1')
@@ -169,7 +217,7 @@ class Model(ModelDesc):
         backbone = eval(cfg.backbone)
         resnet_fms = backbone([image, input_pose_hm], is_train, bn_trainable=True)
         if add_paf_loss:
-            heatmap_outs, paf_outs = self.head_net(resnet_fms, is_train, add_paf_output=add_paf_loss)
+            heatmap_outs, paf_outs = self.head_net(resnet_fms, is_train, add_paf_output=add_paf_loss, add_nonlocal_block=cfg.add_nonlocal_block)
         else:
             heatmap_outs = self.head_net(resnet_fms, is_train)
         if is_train:

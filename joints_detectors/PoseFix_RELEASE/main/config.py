@@ -18,7 +18,8 @@ class Config:
     vis_dir = osp.join(output_dir, 'vis', dataset)
     log_dir = osp.join(output_dir, 'log', dataset)
     result_dir = osp.join(output_dir, 'result', dataset)
- 
+    occluder_dir = '/storage/posedata/VOCdevkit/VOC2012'
+
     ## model setting
     backbone = 'resnet152' # 'resnet50', 'resnet101', 'resnet152'
     init_model = osp.join(data_dir, 'imagenet_weights', 'resnet_v1_' + backbone[6:] + '.ckpt')
@@ -57,6 +58,7 @@ class Config:
     continue_train = False
     display = 1
     add_paf = True
+    add_nonlocal_block = False
     
     ## helper functions
     def get_lr(self, epoch):
