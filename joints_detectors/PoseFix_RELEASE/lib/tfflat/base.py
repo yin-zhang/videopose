@@ -540,7 +540,7 @@ class Trainer(Base):
             if itr % self.cfg.display == 0:
                 self.logger.info(' '.join(screen))
 
-            if itr % self.itr_per_epoch == 0:
+            if itr % (self.itr_per_epoch * 10) == 0:
                 train_saver.save_model(self.cur_epoch)
 
             self.tot_timer.toc()

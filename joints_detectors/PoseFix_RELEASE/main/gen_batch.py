@@ -8,7 +8,7 @@ import time
 import math
 from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
-from autoaugment import load_occluders, occlude_with_objects
+from augmentation import load_occluders, occlude_with_objects
 occluder = load_occluders(cfg.occluder_dir)
 
 def get_affine_transform(center,
@@ -416,8 +416,6 @@ def generate_batch(d, stage='train', add_paf=False):
         cropped_img = cropped_img[:,:, ::-1]
         cropped_img = occlude_with_objects(cropped_img, occluder)
         cropped_img = cropped_img[:,:, ::-1]
-        cv2.imwrite('test.jpg', cropped_img)
-        exit()
 
         cropped_img = cfg.normalize_input(cropped_img)
         

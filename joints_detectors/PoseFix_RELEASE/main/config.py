@@ -18,7 +18,7 @@ class Config:
     vis_dir = osp.join(output_dir, 'vis', dataset)
     log_dir = osp.join(output_dir, 'log', dataset)
     result_dir = osp.join(output_dir, 'result', dataset)
-    occluder_dir = '/storage/posedata/VOCdevkit/VOC2012'
+    occluder_dir = '../data/VOCdevkit/VOC2012'
 
     ## model setting
     backbone = 'resnet152' # 'resnet50', 'resnet101', 'resnet152'
@@ -41,7 +41,7 @@ class Config:
     optimizer = 'adam'
     weight_decay = 1e-5
     bn_train = True
-    batch_size = 16 #32
+    batch_size = 8 #32
     scale_factor = 0.3
     rotation_factor = 40
 
