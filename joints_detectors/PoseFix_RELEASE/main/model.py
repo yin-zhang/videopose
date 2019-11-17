@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import numpy as np
@@ -14,45 +13,46 @@ resnet_arg_scope = partial(resnet_arg_scope, bn_trainable=cfg.bn_train)
 
 class Model(ModelDesc):
     
-    def non_local_block(self, input_x, out_channels, sub_sample=True, is_bn=True, scope='NonLocalBlock'):
+    def non_local_block(self, input_x, sub_sample=True, is_bn=True, scope='NonLocalBlock'):
+        print('Add NON LOCAL BLOCK')
         batch_size, height, width, channels = input_x.get_shape().as_list()
+        inter_channels = channels // 2
         with tf.variable_scope(scope):
             with tf.variable_scope('g'):
-                g = slim.conv2d(input_x, out_channels, [1,1], stride=1, scope='g')
+                g = slim.conv2d(input_x, inter_channels, [1,1], stride=1, scope='g')
                 if sub_sample:
                     g = slim.max_pool2d(g, [2,2], stride=2, scope='g_max_pool')
             
             with tf.variable_scope('phi'):
-                phi = slim.conv2d(input_x, out_channels, [1,1], stride=1, scope='phi')
+                phi = slim.conv2d(input_x, inter_channels, [1,1], stride=1, scope='phi')
                 if sub_sample:
                     phi = slim.max_pool2d(phi, [2,2], stride=2, scope='phi_max_pool')
             
             with tf.variable_scope('theta'):
-                theta = slim.conv2d(input_x, out_channels, [1,1], stride=1, scope='theta')
+                theta = slim.conv2d(input_x, inter_channels, [1,1], stride=1, scope='theta')
 
-            g_x = tf.reshape(g, [batch_size, -1, out_channels])
-            g_x = tf.transpose(g_x, [0,2,1])
+            g_x = tf.reshape(g, [batch_size, -1, inter_channels])
 
-            theta_x = tf.reshape(theta, [batch_size, -1, 1, out_channels])
-            phi_x = tf.reshape(phi, [batch_size, 1, -1, out_channels])
+            theta_x = tf.reshape(theta, [batch_size, -1, 1, inter_channels])
+            phi_x = tf.reshape(phi, [batch_size, 1, -1, inter_channels])
 
-            w = theta_x.get_shape()[2]
-            h = phi_x.get_shape()[1]
+            h = theta_x.get_shape()[1]
+            w = phi_x.get_shape()[2]
 
-            theta_x = tf.tile(theta_x, [1, h, 1, 1])
-            phi_x = tf.tile(phi_x, [1, 1, w, 1])
-
+            theta_x = tf.tile(theta_x, [1, 1, w, 1])
+            phi_x = tf.tile(phi_x, [1, h, 1, 1])
+            
             concat_feat = tf.concat([theta_x, phi_x], 3)
             with tf.variable_scope('concat_feat'):                
                 f = slim.conv2d(concat_feat, 1, [1,1], stride=1, activation_fn=tf.nn.relu, scope='concat_conv')
             f = tf.reshape(f, [batch_size, h, w])
-            f_div_C = f / w
+            f_div_C = f / tf.to_float(w)
             
-            y = tf.matmul(g_x, f_div_C)
-            y = tf.transpose(y, [0,2,3,1])
+            y = tf.matmul(f_div_C, g_x)
+            y = tf.reshape(y, [batch_size, height, width, inter_channels])
 
             with tf.variable_scope('w'):
-                w_y = slim.conv2d(y, out_channels, [1,1], stride=1, scope='w')
+                w_y = slim.conv2d(y, channels, [1,1], stride=1, scope='w')
                 if is_bn:
                     w_y = slim.batch_norm(w_y)
             

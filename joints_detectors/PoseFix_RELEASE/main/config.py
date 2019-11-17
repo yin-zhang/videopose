@@ -58,8 +58,9 @@ class Config:
     continue_train = False
     display = 1
     add_paf = True
-    add_nonlocal_block = False
-    
+    add_nonlocal_block = True
+    voc_augment = False
+
     ## helper functions
     def get_lr(self, epoch):
         for e in self.lr_dec_epoch:
