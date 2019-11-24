@@ -40,9 +40,9 @@ class Dataset(object):
     '''
     # input_pose_path = osp.join('..', 'data', dataset_name, 'input_pose', 'person_keypoints_test-dev2017_Simple152_results.json') # set directory of the input pose
     # input_pose_path = osp.join('..', 'data/COCO/images/test2017/douyin_0/alphapose-results.json')
-    input_pose_path = osp.join('..', 'data/COCO/images/test2017/s_05_act_10_subact_01_ca_01_out/alphapose-results.json')
-    
+    # input_pose_path = osp.join('..', 'data/COCO/images/test2017/s_05_act_10_subact_01_ca_01_out/alphapose-results.json')
     # input_pose_path = test_on_trainset_path
+    input_pose_path = osp.join('..', 'data/COCO/input_pose/alphapose-results.json')
 
 
     img_path = osp.join('..', 'data', dataset_name, 'images')
@@ -143,7 +143,7 @@ class Dataset(object):
         input_pose = [i for i in input_pose if i['image_id'] in gt_img_id]
         input_pose = [i for i in input_pose if i['category_id'] == 1]
         input_pose = [i for i in input_pose if i['score'] > 0]
-
+        print('input pose number', len(input_pose), 'gt image id', len(gt_img_id))
         input_pose.sort(key=lambda x: (x['image_id'], x['score']), reverse=True)
 
         img_id = []

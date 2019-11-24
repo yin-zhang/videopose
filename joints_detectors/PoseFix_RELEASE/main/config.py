@@ -7,7 +7,7 @@ class Config:
     
     ## dataset
     dataset = 'COCO' # 'COCO', 'PoseTrack', 'MPII'
-    testset = 'train' # train, test, val (there is no validation set for MPII)
+    testset = 'val' # train, test, val (there is no validation set for MPII)
 
     ## directory
     cur_dir = osp.dirname(os.path.abspath(__file__))
@@ -57,9 +57,10 @@ class Config:
     num_gpus = 8
     continue_train = False
     display = 1
-    add_paf = True
-    add_nonlocal_block = True
+    add_paf = False
+    add_nonlocal_block = False
     voc_augment = False
+    gauss_integral = False
 
     ## helper functions
     def get_lr(self, epoch):

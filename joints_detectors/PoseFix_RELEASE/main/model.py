@@ -94,9 +94,10 @@ class Model(ModelDesc):
                     scope='paf')
                 out = (hms_out, paf_out)
             else:
+                activation = tf.sigmoid if cfg.gauss_integral else None
                 out = slim.conv2d(out, cfg.num_kps, [1, 1],
                     trainable=trainable, weights_initializer=msra_initializer,
-                    padding='SAME', normalizer_fn=None, activation_fn=None,
+                    padding='SAME', normalizer_fn=None, activation_fn=activation,
                     scope='out')
         return out
 
@@ -219,10 +220,11 @@ class Model(ModelDesc):
         if add_paf_loss:
             heatmap_outs, paf_outs = self.head_net(resnet_fms, is_train, add_paf_output=add_paf_loss, add_nonlocal_block=cfg.add_nonlocal_block)
         else:
-            heatmap_outs = self.head_net(resnet_fms, is_train)
+            heatmap_outs = self.head_net(resnet_fms, is_train, add_nonlocal_block=cfg.add_nonlocal_block)
         if is_train:
             
             if add_paf_loss:
+                print('EMPLOY PAF LOSS')
                 gt_heatmap = tf.stop_gradient(self.render_gaussian_heatmap(target_coord, cfg.output_shape, 1) / 255.0)
                 valid_mask = tf.reshape(target_valid, [cfg.batch_size, 1, 1, cfg.num_kps])
                 hm_diff = tf.square((gt_heatmap - heatmap_outs) * valid_mask)
@@ -239,16 +241,23 @@ class Model(ModelDesc):
 
                 self.set_loss(loss)
             else:
-                gt_heatmap = tf.stop_gradient(tf.reshape(tf.transpose(\
-                        self.render_onehot_heatmap(target_coord, cfg.output_shape),\
-                        [0, 3, 1, 2]), [cfg.batch_size, cfg.num_kps, -1]))
+                if cfg.gauss_integral:
+                    print('APPLY GAUSS INTEGRAL LOSS')
+                    gt_heatmap = tf.stop_gradient(tf.reshape(tf.transpose(self.render_gaussian_heatmap(target_coord, cfg.output_shape, 1) / 255.0,[0, 3, 1, 2]), [cfg.batch_size, cfg.num_kps, -1]))
+                else:
+                    print('APPLY ONEHOT INTEGRAL LOSS')
+                    gt_heatmap = tf.stop_gradient(tf.reshape(tf.transpose(self.render_onehot_heatmap(target_coord, cfg.output_shape),[0, 3, 1, 2]), [cfg.batch_size, cfg.num_kps, -1]))
                 gt_coord = target_coord / cfg.input_shape[0] * cfg.output_shape[0]
 
-                # heatmap loss
                 out = tf.reshape(tf.transpose(heatmap_outs, [0, 3, 1, 2]), [cfg.batch_size, cfg.num_kps, -1])
                 gt = gt_heatmap
-                valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps])
-                loss_heatmap = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=gt, logits=out) * valid_mask)
+                
+                if cfg.gauss_integral:
+                    valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps, 1])
+                    loss_heatmap = tf.reduce_mean(tf.reduce_sum(tf.square((gt - out)*valid_mask), axis=2))
+                else:
+                    valid_mask = tf.reshape(target_valid, [cfg.batch_size, cfg.num_kps])
+                    loss_heatmap = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=gt, logits=out) * valid_mask)
 
                 # coordinate loss
                 out = self.extract_coordinate(heatmap_outs) / cfg.input_shape[0] * cfg.output_shape[0]
@@ -272,4 +281,4 @@ class Model(ModelDesc):
             else:
                 out = self.extract_coordinate(heatmap_outs)
                 self.set_outputs(out)
-                self.set_heatmaps(tf.transpose(heatmap_outs, [0, 3, 1, 2]))
+                self.set_heatmaps(heatmap_outs)

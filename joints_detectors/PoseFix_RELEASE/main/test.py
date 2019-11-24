@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import pickle
 from tqdm import tqdm
 import math
-
+import scipy
 import tensorflow as tf
 
 from tfflat.base import Tester
@@ -25,7 +25,8 @@ from nms.nms import oks_nms
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-def save_mergedHeatmaps(hms, path, c=5, img_res=None):
+def save_mergedHeatmaps(hms, path, c=5, img_res=None, softmax=False):
+    hms = hms.transpose((2,0,1))
     assert len(hms.shape) == 3, 'Dimension of heatmaps should be 3, keypoints x h x w'
     n = hms.shape[0] + (0 if img_res is None else 1)
     r = n // c + (0 if n % c == 0 else 1)
@@ -34,13 +35,15 @@ def save_mergedHeatmaps(hms, path, c=5, img_res=None):
 
     plt.figure()
     plt.subplots_adjust(hspace=0.4)
+    
     for i in range(hms.shape[0]):
         ax = plt.subplot(r, c, i + 1)
         if i < len(joint_names):
             ax.set_title('{:d} {}'.format(i, joint_names[i]), fontsize=10)
         else:
             ax.set_title('{:d}'.format(i), fontsize=10)
-        sns.heatmap(hms[i], cbar=False, cmap='viridis',xticklabels=False,yticklabels=False, ax=ax)
+        sm_hm = scipy.special.softmax(hms[i]) if softmax else hms[i]
+        sns.heatmap(sm_hm, cbar=False, cmap='viridis',xticklabels=False,yticklabels=False, ax=ax)
     
     if img_res is not None:
         ax = plt.subplot(r, c, n)
@@ -101,14 +104,14 @@ def test_net(tester, input_pose, det_range, gpu_id):
             input_pose_valids = np.array(input_pose_valids)
             input_pose_scores = np.array(input_pose_scores)
             crop_infos = np.array(crop_infos)
-            if test_count < 2100: 
-                test_count += imgs.shape[0]
-                continue
-            test_count += imgs.shape[0]
+            #if test_count < 2100: 
+            #    test_count += imgs.shape[0]
+            #    continue
+            #test_count += imgs.shape[0]
 
             # forward
             coord, heatmaps = tester.predict_one([imgs, input_pose_coords, input_pose_valids])
-            np.savez('temp/imgs_{:d}_{:d}.npz'.format(record_id, batch_id), imgs=imgs, heatmaps=heatmaps, coord=coord)
+            # np.savez('temp/imgs_{:d}_{:d}.npz'.format(record_id, batch_id), imgs=imgs, heatmaps=heatmaps, coord=coord)
 
             if cfg.flip_test:
                 flip_imgs = imgs[:, :, ::-1, :]
@@ -150,7 +153,9 @@ def test_net(tester, input_pose, det_range, gpu_id):
                     _tmpimg = tmpimg.copy()
                     _tmpimg = cfg.vis_keypoints(_tmpimg, tmpkps, kp_thresh=0.05)
                     cv2.imwrite(osp.join(cfg.vis_dir, str(img_id) + '_output.jpg'), _tmpimg)
-                    # save_mergedHeatmaps(heatmaps[image_id-start_id], osp.join(cfg.vis_dir, str(img_id) + '_hm.jpg'))
+                    temp_heatmaps = heatmaps[image_id-start_id]
+                    
+                    save_mergedHeatmaps(heatmaps[image_id-start_id], osp.join(cfg.vis_dir, str(img_id) + '_hm.jpg'), softmax=True)
                     img_id += 1
 
                 # map back to original images
